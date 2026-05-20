@@ -58,3 +58,31 @@ def derive_role(instructor_name: str, cohort_lead_last_name: str | None) -> str:
     if not cohort_lead_last_name:
         return "Assist"
     return "Lead" if last_name(instructor_name) == cohort_lead_last_name else "Assist"
+
+
+def normalize_shift(shift: dict, *, class_titles: dict[int, str]) -> dict:
+    """Transform one Humanity workflow shift into a row ready for Supabase.
+
+    Returns a dict matching the `shifts` table columns the v1 sync writes.
+    `type` and `room` are not set here — they default to NULL in the table.
+    """
+    start = parse_time(shift["starting_time"])
+    end = parse_time(shift["ending_time"])
+    lead_last = shift.get("cohort_lead_last_name")
+    raw_title = class_titles.get(shift["class_id"], "")
+    title = raw_title or None  # empty string -> NULL
+
+    return {
+        "shift_date": shift["date"],
+        "am_pm": derive_am_pm(start),
+        "cohort_number": shift["cohort_number"],
+        "class_id": shift["class_id"],
+        "start_time": start.strftime("%H:%M:%S"),
+        "end_time": end.strftime("%H:%M:%S"),
+        "title": title,
+        "instructors": [
+            {"name": i["name"], "role": derive_role(i["name"], lead_last)}
+            for i in shift["instructors"]
+        ],
+        "cohort_lead_last_name": lead_last,
+    }

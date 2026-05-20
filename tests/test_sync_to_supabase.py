@@ -71,5 +71,62 @@ class TestDeriveRole(unittest.TestCase):
         self.assertEqual(s.derive_role("Dean, John", None), "Assist")
 
 
+class TestNormalizeShift(unittest.TestCase):
+    SAMPLE_SHIFT = {
+        "date": "2026-05-19",
+        "starting_time": "08:00AM",
+        "ending_time": "11:55AM",
+        "instructors": [
+            {"name": "Dean, John"},
+            {"name": "Cech, Kevin"},
+            {"name": "Nickels, Keith"},
+        ],
+        "class_id": 918,
+        "cohort_number": 3,
+        "cohort_lead_last_name": "Dean",
+        "equipment_list": [],
+        "summary": None,
+        "activities": [],
+        "reference_material": [],
+    }
+
+    def test_top_level_fields(self):
+        row = s.normalize_shift(self.SAMPLE_SHIFT, class_titles={918: "Trauma"})
+        self.assertEqual(row["shift_date"], "2026-05-19")
+        self.assertEqual(row["am_pm"], "am")
+        self.assertEqual(row["cohort_number"], 3)
+        self.assertEqual(row["class_id"], 918)
+        self.assertEqual(row["start_time"], "08:00:00")
+        self.assertEqual(row["end_time"], "11:55:00")
+        self.assertEqual(row["title"], "Trauma")
+        self.assertEqual(row["cohort_lead_last_name"], "Dean")
+
+    def test_missing_class_id_in_lookup_yields_null_title(self):
+        row = s.normalize_shift(self.SAMPLE_SHIFT, class_titles={})
+        self.assertIsNone(row["title"])
+
+    def test_empty_string_title_in_lookup_normalizes_to_null(self):
+        row = s.normalize_shift(self.SAMPLE_SHIFT, class_titles={918: ""})
+        self.assertIsNone(row["title"])
+
+    def test_instructors_get_roles(self):
+        row = s.normalize_shift(self.SAMPLE_SHIFT, class_titles={})
+        self.assertEqual(
+            row["instructors"],
+            [
+                {"name": "Dean, John",    "role": "Lead"},
+                {"name": "Cech, Kevin",   "role": "Assist"},
+                {"name": "Nickels, Keith","role": "Assist"},
+            ],
+        )
+
+    def test_pm_shift_derives_pm(self):
+        pm = {**self.SAMPLE_SHIFT, "starting_time": "01:00PM", "ending_time": "04:55PM"}
+        row = s.normalize_shift(pm, class_titles={})
+        self.assertEqual(row["am_pm"], "pm")
+        self.assertEqual(row["start_time"], "13:00:00")
+        self.assertEqual(row["end_time"], "16:55:00")
+
+
 if __name__ == "__main__":
     unittest.main()
