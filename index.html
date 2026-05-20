@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Weekly Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Weekly Instructor Tasks</h1>
+            <p id="current-week">Loading current week...</p>
+        </header>
+
+        <main id="dashboard">
+            <div id="loading">Gathering schedule from database...</div>
+        </main>
+    </div>
+
+    <script>
+        // 1. YOUR SUPABASE CREDENTIALS (REPLACE THESE)
+        const SUPABASE_URL = "https://your-project-id.supabase.co";
+        const SUPABASE_ANON_KEY = "your-actual-anon-key-here";
+
+        // Initialize Supabase client
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function fetchDashboardData() {
+            try {
+                // Fetch the most recent tasks from the database
+                const { data, error } = await supabaseClient
+                    .from('weekly_tasks')
+                    .select('*')
+                    .order('week_date', { ascending: false });
+
+                if (error) throw error;
+
+                const dashboard = document.getElementById('dashboard');
+                const loadingText = document.getElementById('loading');
+
+                if (!data || data.length === 0) {
+                    loadingText.innerText = "No tasks found. Waiting for the AI Agent to push data!";
+                    return;
+                }
+
+                // Set the date header based on the latest entry
+                document.getElementById('current-week').innerText = `Week of: ${data[0].week_date}`;
+                loadingText.remove();
+
+                // Generate HTML for each instructor's tasks
+                data.forEach(row => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+
+                    // Parse tasks assuming they were sent as a list/array in JSON
+                    const taskListHTML = row.tasks.map(task => `<li>${task}</li>`).join('');
+
+                    card.innerHTML = `
+                        <h2>${row.instructor_name}</h2>
+                        <ul>${taskListHTML}</ul>
+                    `;
+                    dashboard.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').innerText = "Error loading dashboard data.";
+            }
+        }
+
+        // Run the function when the page opens
+        fetchDashboardData();
+    </script>
+</body>
+
+</html>
