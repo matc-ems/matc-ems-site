@@ -1,80 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instructor Weekly Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MATC Paramedic Lab · Instructor Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--bg); font-family: var(--font-sans); }
+  body { min-height: 100vh; }
+  #root { max-width: 1280px; margin: 0 auto; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="data.js"></script>
+<script type="text/babel" src="myday.jsx"></script>
 </head>
-
 <body>
-    <div class="container">
-        <header>
-            <h1>Weekly Instructor Tasks</h1>
-            <p id="current-week">Loading current week...</p>
-        </header>
-
-        <main id="dashboard">
-            <div id="loading">Gathering schedule from database...</div>
-        </main>
-    </div>
-
-    <script>
-        // 1. YOUR SUPABASE CREDENTIALS (REPLACE THESE)
-        const SUPABASE_URL = "https://tapgnqgbszyhrkjsjmrg.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_SEe6wc-wEwSiRYKfwVZ58Q_0f90CnaB";
-
-        // Initialize Supabase client
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        async function fetchDashboardData() {
-            try {
-                // Fetch the most recent tasks from the database
-                const { data, error } = await supabaseClient
-                    .from('weekly_tasks')
-                    .select('*')
-                    .order('week_date', { ascending: false });
-
-                if (error) throw error;
-
-                const dashboard = document.getElementById('dashboard');
-                const loadingText = document.getElementById('loading');
-
-                if (!data || data.length === 0) {
-                    loadingText.innerText = "No tasks found. Waiting for the AI Agent to push data!";
-                    return;
-                }
-
-                // Set the date header based on the latest entry
-                document.getElementById('current-week').innerText = `Week of: ${data[0].week_date}`;
-                loadingText.remove();
-
-                // Generate HTML for each instructor's tasks
-                data.forEach(row => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-
-                    // Parse tasks assuming they were sent as a list/array in JSON
-                    const taskListHTML = row.tasks.map(task => `<li>${task}</li>`).join('');
-
-                    card.innerHTML = `
-                        <h2>${row.instructor_name}</h2>
-                        <ul>${taskListHTML}</ul>
-                    `;
-                    dashboard.appendChild(card);
-                });
-
-            } catch (err) {
-                console.error(err);
-                document.getElementById('loading').innerText = "Error loading dashboard data.";
-            }
-        }
-
-        // Run the function when the page opens
-        fetchDashboardData();
-    </script>
+<div id="root">
+  <div style="padding: 40px; text-align: center; color: #8a857a; font-family: sans-serif;">
+    Loading this week's schedule…
+  </div>
+</div>
+<script type="text/babel">
+  (async () => {
+    try {
+      await window.loadParamedicData();
+      ReactDOM.createRoot(document.getElementById('root')).render(<D5MyDay />);
+    } catch (err) {
+      document.getElementById('root').innerHTML =
+        '<div style="padding: 40px; text-align: center; color: #b91c1c; font-family: sans-serif;">' +
+        'Could not load schedule. Check the browser console for details.</div>';
+      console.error(err);
+    }
+  })();
+</script>
 </body>
-
 </html>

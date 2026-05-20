@@ -157,7 +157,7 @@ function D5ShiftCard({ cohort, cIdx, shift }) {
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
         <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ink-mid)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          {cohort.name} · {cohort.stage}
+          {cohort.name}
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <span className={`pill ${shift.type}`}>{meta.label}</span>
