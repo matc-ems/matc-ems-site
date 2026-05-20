@@ -9,6 +9,7 @@ machine (`humanity_agent.py --set-token "..."`).
 """
 from __future__ import annotations
 
+import argparse
 from datetime import date, time, timedelta
 
 
@@ -100,3 +101,27 @@ def current_week_range(*, today: date | None = None) -> tuple[date, date]:
     monday = today - timedelta(days=today.weekday())
     friday = monday + timedelta(days=4)
     return monday, friday
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse sync_to_supabase.py CLI args.
+
+    `--from` and `--to` are independent of the Humanity agent's `--from`/`--to`
+    even though they have the same names; the sync forwards them when calling
+    the agent.
+    """
+    p = argparse.ArgumentParser(description="Sync Humanity shifts into Supabase.")
+    p.add_argument("--from", dest="from_date",
+                   help="Inclusive range start (YYYY-MM-DD). Must be paired with --to.")
+    p.add_argument("--to", dest="to_date",
+                   help="Inclusive range end (YYYY-MM-DD). Must be paired with --from.")
+    p.add_argument("--cohorts", default="1,2,3,4",
+                   help="Comma-separated cohort numbers. Default: 1,2,3,4.")
+    p.add_argument("--input",
+                   help="Path to a pre-fetched workflow JSON. Skips the Humanity call.")
+    p.add_argument("--dry-run", action="store_true",
+                   help="Print rows that would be upserted; make no Supabase call.")
+    args = p.parse_args(argv)
+    if bool(args.from_date) ^ bool(args.to_date):
+        p.error("--from and --to must be provided together")
+    return args

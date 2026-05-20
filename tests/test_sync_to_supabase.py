@@ -156,5 +156,40 @@ class TestCurrentWeekRange(unittest.TestCase):
         self.assertEqual(fri, date(2026, 5, 22))
 
 
+class TestParseArgs(unittest.TestCase):
+    def test_no_args_returns_defaults(self):
+        args = s.parse_args([])
+        self.assertIsNone(args.from_date)
+        self.assertIsNone(args.to_date)
+        self.assertEqual(args.cohorts, "1,2,3,4")
+        self.assertIsNone(args.input)
+        self.assertFalse(args.dry_run)
+
+    def test_date_range(self):
+        args = s.parse_args(["--from", "2026-05-18", "--to", "2026-05-22"])
+        self.assertEqual(args.from_date, "2026-05-18")
+        self.assertEqual(args.to_date, "2026-05-22")
+
+    def test_cohorts_subset(self):
+        args = s.parse_args(["--cohorts", "1,3"])
+        self.assertEqual(args.cohorts, "1,3")
+
+    def test_input_path(self):
+        args = s.parse_args(["--input", "/tmp/shifts.json"])
+        self.assertEqual(args.input, "/tmp/shifts.json")
+
+    def test_dry_run(self):
+        args = s.parse_args(["--dry-run"])
+        self.assertTrue(args.dry_run)
+
+    def test_from_without_to_errors(self):
+        with self.assertRaises(SystemExit):
+            s.parse_args(["--from", "2026-05-18"])
+
+    def test_to_without_from_errors(self):
+        with self.assertRaises(SystemExit):
+            s.parse_args(["--to", "2026-05-22"])
+
+
 if __name__ == "__main__":
     unittest.main()
