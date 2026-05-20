@@ -1,0 +1,75 @@
+/* Shared design tokens — paramedic instructor homepage */
+:root {
+  /* Typography */
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Warm neutral palette */
+  --bg:         #f6f4ef;
+  --bg-card:   #ffffff;
+  --bg-sunk:   #efece5;
+  --line:      #e3dfd5;
+  --line-soft: #ece8dd;
+  --ink:       #1a1a1a;
+  --ink-mid:   #555049;
+  --ink-soft:  #8a857a;
+
+  /* Brand accents (low chroma, harmonized) */
+  --accent:        oklch(0.56 0.14 28);   /* terracotta */
+  --accent-soft:   oklch(0.93 0.04 28);
+  --accent-deep:   oklch(0.40 0.13 28);
+
+  /* Activity-type colors (varied hue, similar lightness/chroma) */
+  --scn-fg: oklch(0.45 0.14 28);   --scn-bg: oklch(0.95 0.04 28);   /* terracotta */
+  --lec-fg: oklch(0.45 0.10 245);  --lec-bg: oklch(0.95 0.03 245);  /* blue */
+  --skl-fg: oklch(0.45 0.10 150);  --skl-bg: oklch(0.95 0.03 150);  /* green */
+  --cln-fg: oklch(0.45 0.10 290);  --cln-bg: oklch(0.95 0.03 290);  /* violet */
+  --exm-fg: oklch(0.45 0.12 60);   --exm-bg: oklch(0.95 0.04 60);   /* amber */
+  --off-fg: oklch(0.55 0.00 0);    --off-bg: oklch(0.95 0.00 0);    /* neutral */
+
+  /* Cohort tones (used as left rails / chips) */
+  --c1: oklch(0.65 0.14 60);   /* amber */
+  --c2: oklch(0.55 0.14 245);  /* blue */
+  --c3: oklch(0.55 0.13 150);  /* green */
+  --c4: oklch(0.55 0.14 295);  /* violet */
+}
+
+* { box-sizing: border-box; }
+.font-serif { font-family: var(--font-serif); font-weight: 400; }
+.font-mono  { font-family: var(--font-mono); }
+
+/* Activity pills */
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.02em;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.pill.scenario { color: var(--scn-fg); background: var(--scn-bg); }
+.pill.lecture  { color: var(--lec-fg); background: var(--lec-bg); }
+.pill.skills   { color: var(--skl-fg); background: var(--skl-bg); }
+.pill.clinical { color: var(--cln-fg); background: var(--cln-bg); }
+.pill.exam     { color: var(--exm-fg); background: var(--exm-bg); }
+.pill.off      { color: var(--off-fg); background: var(--off-bg); }
+
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; }
+.dot.c1 { background: var(--c1); }
+.dot.c2 { background: var(--c2); }
+.dot.c3 { background: var(--c3); }
+.dot.c4 { background: var(--c4); }
+
+.rail-c1 { box-shadow: inset 4px 0 0 var(--c1); }
+.rail-c2 { box-shadow: inset 4px 0 0 var(--c2); }
+.rail-c3 { box-shadow: inset 4px 0 0 var(--c3); }
+.rail-c4 { box-shadow: inset 4px 0 0 var(--c4); }
+
+.scenario-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: var(--accent-deep); text-decoration: none;
+  font-weight: 500;
+  border-bottom: 1px dotted currentColor;
+}
+.scenario-link:hover { color: var(--accent); }
+.scenario-link::after { content: "↗"; font-size: 0.85em; opacity: 0.7; }
