@@ -16,6 +16,7 @@ import subprocess
 import sys
 
 import requests
+from dotenv import load_dotenv
 
 from datetime import date, time, timedelta
 
@@ -190,3 +191,74 @@ def upsert_to_supabase(rows: list[dict], *, supabase_url: str, service_key: str)
     if resp.status_code >= 400:
         sys.stderr.write(f"Supabase {resp.status_code}: {resp.text}\n")
         sys.exit(2)
+
+
+def _read_secrets() -> tuple[str, str]:
+    """Load .env and return (SUPABASE_URL, SUPABASE_SERVICE_KEY). Exits if missing."""
+    load_dotenv()
+    url = os.environ.get("SUPABASE_URL", "").strip()
+    key = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
+    if not url:
+        sys.stderr.write("Missing SUPABASE_URL in .env\n")
+        sys.exit(3)
+    if not key:
+        sys.stderr.write("Missing SUPABASE_SERVICE_KEY in .env\n")
+        sys.exit(3)
+    return url, key
+
+
+def main(argv: list[str] | None = None) -> None:
+    from class_titles import CLASS_TITLES
+
+    args = parse_args(argv)
+
+    # Resolve date range.
+    if args.from_date:
+        from_date, to_date = args.from_date, args.to_date
+    else:
+        mon, fri = current_week_range()
+        from_date, to_date = mon.isoformat(), fri.isoformat()
+
+    # Get workflow JSON.
+    if args.input:
+        json_path = args.input
+    else:
+        json_path = run_humanity_workflow(
+            from_date=from_date, to_date=to_date, cohorts=args.cohorts
+        )
+    shifts = load_workflow_json(json_path)
+
+    # Normalize.
+    rows: list[dict] = []
+    missing_titles: set[int] = set()
+    for shift in shifts:
+        rows.append(normalize_shift(shift, class_titles=CLASS_TITLES))
+        if shift["class_id"] not in CLASS_TITLES or not CLASS_TITLES[shift["class_id"]]:
+            missing_titles.add(shift["class_id"])
+
+    # Report per-shift.
+    for r in rows:
+        n_inst = len(r["instructors"])
+        print(
+            f"{r['shift_date']} {r['am_pm'].upper():2} "
+            f"C{r['cohort_number']} #{r['class_id']} — "
+            f"{n_inst} instructor{'s' if n_inst != 1 else ''}"
+        )
+
+    if missing_titles:
+        sys.stderr.write(
+            f"warning: class_ids without titles in CLASS_TITLES: "
+            f"{sorted(missing_titles)} (stored as NULL)\n"
+        )
+
+    if args.dry_run:
+        print(f"\nDRY RUN — would upsert {len(rows)} rows. Nothing sent.")
+        return
+
+    supabase_url, service_key = _read_secrets()
+    upsert_to_supabase(rows, supabase_url=supabase_url, service_key=service_key)
+    print(f"\nUpserted {len(rows)} shifts into Supabase.")
+
+
+if __name__ == "__main__":
+    main()
