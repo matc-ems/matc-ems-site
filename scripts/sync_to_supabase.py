@@ -10,6 +10,10 @@ machine (`humanity_agent.py --set-token "..."`).
 from __future__ import annotations
 
 import argparse
+import json
+import os
+import subprocess
+import sys
 from datetime import date, time, timedelta
 
 
@@ -125,3 +129,38 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     if bool(args.from_date) ^ bool(args.to_date):
         p.error("--from and --to must be provided together")
     return args
+
+
+# Path to the Humanity skill's bundled CLI + venv interpreter.
+HUMANITY_PY = os.path.expanduser("~/.claude/skills/matc-humanity/.venv/bin/python")
+HUMANITY_AGENT = os.path.expanduser("~/.claude/skills/matc-humanity/humanity_agent.py")
+
+
+def run_humanity_workflow(*, from_date: str, to_date: str, cohorts: str) -> str:
+    """Shell out to humanity_agent.py --workflow and return the output JSON path.
+
+    The agent prints only the file path to stdout in --workflow mode.
+    On non-zero exit, prints stderr and aborts the sync (likely a 401 token
+    expiry; the agent's own message tells the user how to refresh).
+    """
+    cmd = [
+        HUMANITY_PY, HUMANITY_AGENT,
+        "--workflow",
+        "--from", from_date,
+        "--to", to_date,
+        "--cohorts", cohorts,
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        sys.stderr.write(result.stderr or "humanity_agent.py failed with no stderr.\n")
+        sys.exit(1)
+    return result.stdout.strip()
+
+
+def load_workflow_json(path: str) -> list[dict]:
+    """Read a Humanity workflow JSON file; expected to be a list of shifts."""
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, list):
+        raise ValueError(f"Expected a list of shifts in {path}, got {type(data).__name__}")
+    return data

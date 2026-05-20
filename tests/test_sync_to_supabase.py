@@ -1,8 +1,11 @@
 """Unit tests for scripts/sync_to_supabase.py — pure-function layer."""
+import json
 import sys
+import tempfile
 import unittest
 from datetime import date, time
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
@@ -189,6 +192,42 @@ class TestParseArgs(unittest.TestCase):
     def test_to_without_from_errors(self):
         with self.assertRaises(SystemExit):
             s.parse_args(["--to", "2026-05-22"])
+
+
+class TestRunHumanityWorkflow(unittest.TestCase):
+    def test_calls_subprocess_with_expected_args(self):
+        fake_stdout = "/tmp/fake-shifts.json\n"
+        with patch.object(s.subprocess, "run") as mock_run:
+            mock_run.return_value = MagicMock(stdout=fake_stdout, returncode=0)
+            path = s.run_humanity_workflow(
+                from_date="2026-05-18", to_date="2026-05-22", cohorts="1,2,3,4"
+            )
+        self.assertEqual(path, "/tmp/fake-shifts.json")
+        args, kwargs = mock_run.call_args
+        cmd = args[0]
+        self.assertIn("--workflow", cmd)
+        self.assertIn("--from", cmd)
+        self.assertIn("2026-05-18", cmd)
+        self.assertIn("--to", cmd)
+        self.assertIn("2026-05-22", cmd)
+        self.assertIn("--cohorts", cmd)
+        self.assertIn("1,2,3,4", cmd)
+
+    def test_nonzero_exit_raises(self):
+        with patch.object(s.subprocess, "run") as mock_run:
+            mock_run.return_value = MagicMock(stdout="", returncode=1, stderr="boom")
+            with self.assertRaises(SystemExit):
+                s.run_humanity_workflow(
+                    from_date="2026-05-18", to_date="2026-05-22", cohorts="1"
+                )
+
+    def test_load_workflow_json_reads_file(self):
+        sample = [{"date": "2026-05-18", "class_id": 918}]
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+            json.dump(sample, f)
+            path = f.name
+        loaded = s.load_workflow_json(path)
+        self.assertEqual(loaded, sample)
 
 
 if __name__ == "__main__":
