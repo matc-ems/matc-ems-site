@@ -1,7 +1,7 @@
 """Unit tests for scripts/sync_to_supabase.py — pure-function layer."""
 import sys
 import unittest
-from datetime import time
+from datetime import date, time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
@@ -126,6 +126,34 @@ class TestNormalizeShift(unittest.TestCase):
         self.assertEqual(row["am_pm"], "pm")
         self.assertEqual(row["start_time"], "13:00:00")
         self.assertEqual(row["end_time"], "16:55:00")
+
+
+class TestCurrentWeekRange(unittest.TestCase):
+    def test_monday_returns_same_week(self):
+        # 2026-05-18 is a Monday.
+        mon, fri = s.current_week_range(today=date(2026, 5, 18))
+        self.assertEqual(mon, date(2026, 5, 18))
+        self.assertEqual(fri, date(2026, 5, 22))
+
+    def test_tuesday_resolves_back_to_monday(self):
+        mon, fri = s.current_week_range(today=date(2026, 5, 19))
+        self.assertEqual(mon, date(2026, 5, 18))
+        self.assertEqual(fri, date(2026, 5, 22))
+
+    def test_friday_returns_same_week(self):
+        mon, fri = s.current_week_range(today=date(2026, 5, 22))
+        self.assertEqual(mon, date(2026, 5, 18))
+        self.assertEqual(fri, date(2026, 5, 22))
+
+    def test_saturday_resolves_to_just_ended_week(self):
+        mon, fri = s.current_week_range(today=date(2026, 5, 23))
+        self.assertEqual(mon, date(2026, 5, 18))
+        self.assertEqual(fri, date(2026, 5, 22))
+
+    def test_sunday_resolves_to_just_ended_week(self):
+        mon, fri = s.current_week_range(today=date(2026, 5, 24))
+        self.assertEqual(mon, date(2026, 5, 18))
+        self.assertEqual(fri, date(2026, 5, 22))
 
 
 if __name__ == "__main__":

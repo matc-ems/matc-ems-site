@@ -9,7 +9,7 @@ machine (`humanity_agent.py --set-token "..."`).
 """
 from __future__ import annotations
 
-from datetime import time
+from datetime import date, time, timedelta
 
 
 def parse_time(humanity_time: str) -> time:
@@ -86,3 +86,17 @@ def normalize_shift(shift: dict, *, class_titles: dict[int, str]) -> dict:
         ],
         "cohort_lead_last_name": lead_last,
     }
+
+
+def current_week_range(*, today: date | None = None) -> tuple[date, date]:
+    """Return (Monday, Friday) of the ISO calendar week containing `today`.
+
+    Sat/Sun resolve to the week that just ended (the most recent Mon-Fri).
+    If `today` is omitted, uses `date.today()`. Pass an explicit date in tests.
+    """
+    if today is None:
+        today = date.today()
+    # date.weekday(): Monday=0 .. Sunday=6
+    monday = today - timedelta(days=today.weekday())
+    friday = monday + timedelta(days=4)
+    return monday, friday
