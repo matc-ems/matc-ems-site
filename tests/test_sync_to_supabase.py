@@ -230,5 +230,78 @@ class TestRunHumanityWorkflow(unittest.TestCase):
         self.assertEqual(loaded, sample)
 
 
+class TestUpsertToSupabase(unittest.TestCase):
+    SAMPLE_ROWS = [
+        {
+            "shift_date": "2026-05-18", "am_pm": "pm", "cohort_number": 3,
+            "class_id": 918, "start_time": "13:00:00", "end_time": "16:55:00",
+            "title": None, "instructors": [{"name": "Dean, John", "role": "Lead"}],
+            "cohort_lead_last_name": "Dean",
+        }
+    ]
+
+    def test_posts_to_correct_url(self):
+        with patch.object(s.requests, "post") as mock_post:
+            mock_post.return_value = MagicMock(status_code=201, text="[]")
+            s.upsert_to_supabase(
+                self.SAMPLE_ROWS,
+                supabase_url="https://abc.supabase.co",
+                service_key="svc-xyz",
+            )
+        args, kwargs = mock_post.call_args
+        self.assertEqual(
+            args[0],
+            "https://abc.supabase.co/rest/v1/shifts"
+            "?on_conflict=shift_date,cohort_number,start_time",
+        )
+
+    def test_sends_correct_headers(self):
+        with patch.object(s.requests, "post") as mock_post:
+            mock_post.return_value = MagicMock(status_code=201, text="[]")
+            s.upsert_to_supabase(
+                self.SAMPLE_ROWS,
+                supabase_url="https://abc.supabase.co",
+                service_key="svc-xyz",
+            )
+        _, kwargs = mock_post.call_args
+        headers = kwargs["headers"]
+        self.assertEqual(headers["apikey"], "svc-xyz")
+        self.assertEqual(headers["Authorization"], "Bearer svc-xyz")
+        self.assertEqual(headers["Content-Type"], "application/json")
+        self.assertIn("resolution=merge-duplicates", headers["Prefer"])
+
+    def test_sends_rows_as_json(self):
+        with patch.object(s.requests, "post") as mock_post:
+            mock_post.return_value = MagicMock(status_code=201, text="[]")
+            s.upsert_to_supabase(
+                self.SAMPLE_ROWS,
+                supabase_url="https://abc.supabase.co",
+                service_key="svc-xyz",
+            )
+        _, kwargs = mock_post.call_args
+        self.assertEqual(kwargs["json"], self.SAMPLE_ROWS)
+
+    def test_4xx_raises_systemexit(self):
+        with patch.object(s.requests, "post") as mock_post:
+            mock_post.return_value = MagicMock(
+                status_code=400, text='{"message":"bad row"}'
+            )
+            with self.assertRaises(SystemExit):
+                s.upsert_to_supabase(
+                    self.SAMPLE_ROWS,
+                    supabase_url="https://abc.supabase.co",
+                    service_key="svc-xyz",
+                )
+
+    def test_empty_rows_noop(self):
+        with patch.object(s.requests, "post") as mock_post:
+            s.upsert_to_supabase(
+                [],
+                supabase_url="https://abc.supabase.co",
+                service_key="svc-xyz",
+            )
+        mock_post.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()

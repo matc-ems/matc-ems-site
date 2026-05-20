@@ -14,6 +14,9 @@ import json
 import os
 import subprocess
 import sys
+
+import requests
+
 from datetime import date, time, timedelta
 
 
@@ -164,3 +167,26 @@ def load_workflow_json(path: str) -> list[dict]:
     if not isinstance(data, list):
         raise ValueError(f"Expected a list of shifts in {path}, got {type(data).__name__}")
     return data
+
+
+def upsert_to_supabase(rows: list[dict], *, supabase_url: str, service_key: str) -> None:
+    """POST rows to Supabase PostgREST as an upsert keyed on the unique index.
+
+    No-op when rows is empty. On 4xx/5xx, prints the response body and exits 2.
+    """
+    if not rows:
+        return
+    url = (
+        f"{supabase_url.rstrip('/')}/rest/v1/shifts"
+        "?on_conflict=shift_date,cohort_number,start_time"
+    )
+    headers = {
+        "apikey": service_key,
+        "Authorization": f"Bearer {service_key}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates,return=representation",
+    }
+    resp = requests.post(url, headers=headers, json=rows)
+    if resp.status_code >= 400:
+        sys.stderr.write(f"Supabase {resp.status_code}: {resp.text}\n")
+        sys.exit(2)
