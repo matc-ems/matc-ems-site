@@ -7,7 +7,9 @@
 //
 // SHAPE produced (see myday.jsx for the consumer):
 //   schedule[cohortId][dayIdx] = { am: Shift|null, pm: Shift|null }
-//   Shift = { type, title, room, instructors: [{name, role}], scenarios?: [...] }
+//   Shift = { type, title, room, instructors: [{name, role}],
+//             activities: { perInstructor: {<name>: [{label, href}]},
+//                           shared: [{name, links: [{label, href}]}] } }
 
 const SUPABASE_URL = "https://tapgnqgbszyhrkjsjmrg.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_SEe6wc-wEwSiRYKfwVZ58Q_0f90CnaB";
@@ -76,12 +78,18 @@ function computeTodayIdx(today = new Date()) {
 
 // Turn one Supabase row into the Shift object myday.jsx renders.
 function shiftFromRow(row) {
+  const acts = row.activities || {};
   return {
     type: row.type || "scenario",                       // fallback until v2 wires `type`
     title: row.title || `EMS-${row.class_id}`,
     room: row.room || "",
     instructors: Array.isArray(row.instructors) ? row.instructors : [],
-    // scenarios stays absent in v1; component handles its absence gracefully.
+    // Resolved at sync time by scripts/sheet_activities.py; normalized here so
+    // the component never sees a missing key.
+    activities: {
+      perInstructor: (acts && acts.perInstructor) || {},
+      shared: (acts && Array.isArray(acts.shared)) ? acts.shared : [],
+    },
   };
 }
 
@@ -139,26 +147,4 @@ window.loadParamedicData = async function loadParamedicData() {
     schedule: buildSchedule(rows || [], mondayISO),
     typeMeta: TYPE_META,
   };
-};
-
-// PD helpers used by myday.jsx (`window.PD.scenariosByInstructor`). Kept here
-// for symmetry with the original reference file. v1 shifts have no scenarios,
-// so this returns null for every shift and the component falls through to its
-// "flat instructor list" branch.
-window.PD = {
-  scenariosByInstructor(shift) {
-    if (!shift || !shift.scenarios || shift.scenarios.length === 0) return null;
-    const result = new Map();
-    shift.instructors.forEach(i => result.set(i.name, []));
-    const shared = [];
-    shift.scenarios.forEach(scn => {
-      if (!scn.assignedTo) { shared.push(scn); return; }
-      const targets = Array.isArray(scn.assignedTo) ? scn.assignedTo : [scn.assignedTo];
-      targets.forEach(t => {
-        if (!result.has(t)) result.set(t, []);
-        result.get(t).push(scn);
-      });
-    });
-    return { perInstructor: result, shared };
-  }
 };

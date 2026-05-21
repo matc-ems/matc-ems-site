@@ -142,8 +142,11 @@ function D5ShiftCard({ cohort, cIdx, shift }) {
     );
   }
 
-  const grouped = window.PD.scenariosByInstructor(shift);
+  const { perInstructor, shared } = shift.activities;
   const hasMultiInstructors = shift.instructors.length > 1;
+  const hasAssigned = shift.instructors.some(
+    ins => (perInstructor[ins.name] || []).length > 0
+  );
 
   return (
     <div className={`rail-c${cIdx}`} style={{
@@ -163,34 +166,33 @@ function D5ShiftCard({ cohort, cIdx, shift }) {
         {shift.title}
       </div>
 
-      {/* Per-instructor blocks */}
-      {grouped ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {grouped.shared.length > 0 && (
-            <D5ScenarioGroup label="Everyone" scenarios={grouped.shared} />
-          )}
-          {[...grouped.perInstructor.entries()].map(([name, scns]) => (
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {/* Shared material groups, one per activity, above the instructors. */}
+        {shared.map((group, gi) => (
+          <D5ScenarioGroup key={`shared-${gi}`} label={group.name} scenarios={group.links} />
+        ))}
+
+        {/* Instructors: per-instructor blocks when scenarios are assigned,
+            otherwise a flat name list (same as a shift with no sheet data). */}
+        {hasAssigned ? (
+          shift.instructors.map(ins => (
             <D5InstructorBlock
-              key={name}
-              name={name}
-              scenarios={scns}
+              key={ins.name}
+              name={ins.name}
+              scenarios={perInstructor[ins.name] || []}
               solo={!hasMultiInstructors}
             />
-          ))}
-        </div>
-      ) : (
-        // No scenarios — show instructors flat + optional link
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          {shift.instructors.map((ins, i) => (
-            <div key={i} style={{ fontSize: 13, fontWeight: 500 }}>
-              {ins.name}
-            </div>
-          ))}
-          {shift.link && (
-            <a href={shift.link.href} className="scenario-link" style={{ marginTop: 6, fontSize: 13 }}>{shift.link.label}</a>
-          )}
-        </div>
-      )}
+          ))
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {shift.instructors.map((ins, i) => (
+              <div key={i} style={{ fontSize: 13, fontWeight: 500 }}>
+                {ins.name}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -210,7 +212,7 @@ function D5InstructorBlock({ name, scenarios, solo }) {
           {scenarios.map((s, i) => (
             <li key={i} style={{ fontSize: 13, display: "flex", gap: 8, alignItems: "baseline" }}>
               <span style={{ color: "var(--ink-soft)", fontFamily: "var(--font-mono)", fontSize: 10, paddingTop: 2 }}>›</span>
-              <a href={s.href} className="scenario-link" style={{ fontSize: 13 }}>{s.title}</a>
+              <a href={s.href} className="scenario-link" style={{ fontSize: 13 }}>{s.label}</a>
             </li>
           ))}
         </ul>
@@ -226,14 +228,16 @@ function D5ScenarioGroup({ label, scenarios }) {
       borderRadius: 7,
       padding: "8px 10px"
     }}>
-      <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
-        {label}
-      </div>
+      {label && (
+        <div style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
+          {label}
+        </div>
+      )}
       <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 3 }}>
         {scenarios.map((s, i) => (
           <li key={i} style={{ fontSize: 13, display: "flex", gap: 8, alignItems: "baseline" }}>
             <span style={{ color: "var(--ink-soft)", fontFamily: "var(--font-mono)", fontSize: 10, paddingTop: 2 }}>›</span>
-            <a href={s.href} className="scenario-link" style={{ fontSize: 13 }}>{s.title}</a>
+            <a href={s.href} className="scenario-link" style={{ fontSize: 13 }}>{s.label}</a>
           </li>
         ))}
       </ul>
