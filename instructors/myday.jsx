@@ -125,8 +125,6 @@ function countActive(dayCohorts) {
 }
 
 function D5ShiftCard({ cohort, cIdx, shift }) {
-  const D = window.PARAMEDIC_DATA;
-
   if (!shift) {
     return (
       <div className={`rail-c${cIdx}`} style={{
@@ -144,7 +142,6 @@ function D5ShiftCard({ cohort, cIdx, shift }) {
     );
   }
 
-  const meta = D.typeMeta[shift.type];
   const grouped = window.PD.scenariosByInstructor(shift);
   const hasMultiInstructors = shift.instructors.length > 1;
 
@@ -159,10 +156,7 @@ function D5ShiftCard({ cohort, cIdx, shift }) {
         <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ink-mid)", textTransform: "uppercase", letterSpacing: "0.08em" }}>
           {cohort.name}
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <span className={`pill ${shift.type}`}>{meta.label}</span>
-          <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ink-soft)" }}>{shift.room}</span>
-        </div>
+        <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ink-soft)" }}>{shift.room}</span>
       </div>
 
       <div className="font-serif" style={{ fontSize: 22, lineHeight: 1.15, marginBottom: 10 }}>
@@ -175,26 +169,21 @@ function D5ShiftCard({ cohort, cIdx, shift }) {
           {grouped.shared.length > 0 && (
             <D5ScenarioGroup label="Everyone" scenarios={grouped.shared} />
           )}
-          {[...grouped.perInstructor.entries()].map(([name, scns]) => {
-            const ins = shift.instructors.find(i => i.name === name);
-            return (
-              <D5InstructorBlock
-                key={name}
-                name={name}
-                role={ins?.role}
-                scenarios={scns}
-                solo={!hasMultiInstructors}
-              />
-            );
-          })}
+          {[...grouped.perInstructor.entries()].map(([name, scns]) => (
+            <D5InstructorBlock
+              key={name}
+              name={name}
+              scenarios={scns}
+              solo={!hasMultiInstructors}
+            />
+          ))}
         </div>
       ) : (
         // No scenarios — show instructors flat + optional link
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {shift.instructors.map((ins, i) => (
-            <div key={i} style={{ display: "flex", gap: 10, fontSize: 13 }}>
-              <span style={{ fontWeight: 500, minWidth: 96 }}>{ins.name}</span>
-              <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ink-soft)" }}>{ins.role}</span>
+            <div key={i} style={{ fontSize: 13, fontWeight: 500 }}>
+              {ins.name}
             </div>
           ))}
           {shift.link && (
@@ -206,12 +195,11 @@ function D5ShiftCard({ cohort, cIdx, shift }) {
   );
 }
 
-function D5InstructorBlock({ name, role, scenarios, solo }) {
+function D5InstructorBlock({ name, scenarios, solo }) {
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+      <div style={{ marginBottom: 4 }}>
         <span style={{ fontWeight: 600, fontSize: 13 }}>{name}</span>
-        <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{role}</span>
       </div>
       {scenarios.length === 0 ? (
         <div style={{ fontSize: 12, color: "var(--ink-soft)", fontStyle: "italic", paddingLeft: 2 }}>
