@@ -3,41 +3,69 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>MATC Paramedic Lab · Instructor Hub</title>
+<title>MATC Paramedic Lab · Student Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="shared/tokens.css">
 <style>
-  html, body { margin: 0; padding: 0; background: var(--bg); font-family: var(--font-sans); }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--ink);
+    font-family: var(--font-sans);
+  }
   body { min-height: 100vh; }
-  #root { max-width: 1280px; margin: 0 auto; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 28px 36px 48px; }
+
+  .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+  .badge {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: var(--accent); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px;
+  }
+  .brand-kicker {
+    font-size: 11px; font-family: var(--font-mono);
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-soft);
+  }
+  .brand-name { font-size: 14px; font-weight: 500; }
+
+  .hero { padding: 12px 0 22px; border-bottom: 1px solid var(--line); margin-bottom: 28px; }
+  .hero h1 {
+    font-family: var(--font-serif); font-weight: 400;
+    font-size: 52px; line-height: 1.0; margin: 0;
+  }
+  .hero p { font-size: 16px; color: var(--ink-soft); margin: 10px 0 0; }
+
+  .section-label {
+    font-size: 11px; font-family: var(--font-mono);
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft);
+    margin-bottom: 12px;
+  }
+  .empty {
+    background: var(--bg-sunk); border-radius: 10px;
+    padding: 32px; text-align: center;
+    font-size: 14px; color: var(--ink-soft);
+  }
 </style>
-<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="data.js"></script>
-<script type="text/babel" src="myday.jsx"></script>
 </head>
 <body>
-<div id="root">
-  <div style="padding: 40px; text-align: center; color: #8a857a; font-family: sans-serif;">
-    Loading this week's schedule…
+  <div class="wrap">
+    <div class="topbar">
+      <div class="badge">+</div>
+      <div>
+        <div class="brand-kicker">MATC Paramedic Lab</div>
+        <div class="brand-name">Student Hub</div>
+      </div>
+    </div>
+
+    <div class="hero">
+      <h1>Student Hub</h1>
+      <p>Tools and resources for the MATC paramedic program.</p>
+    </div>
+
+    <div class="section-label">Tools</div>
+    <div class="empty">Tools coming soon.</div>
   </div>
-</div>
-<script type="text/babel">
-  (async () => {
-    try {
-      await window.loadParamedicData();
-      ReactDOM.createRoot(document.getElementById('root')).render(<D5MyDay />);
-    } catch (err) {
-      document.getElementById('root').innerHTML =
-        '<div style="padding: 40px; text-align: center; color: #b91c1c; font-family: sans-serif;">' +
-        'Could not load schedule. Check the browser console for details.</div>';
-      console.error(err);
-    }
-  })();
-</script>
 </body>
 </html>
