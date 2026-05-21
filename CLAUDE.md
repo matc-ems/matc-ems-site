@@ -4,18 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-The MATC Paramedic Lab "Instructor Hub" — a homepage that shows the current
-week's EMS lab shifts (date, AM/PM, cohort, class, instructors). It has two
-halves joined only by a Supabase table:
+The MATC Paramedic Lab site — a build-less static site with two front-end
+pages plus a Python data pipeline:
 
-- **Frontend** — a build-less static site (`index.html`, `data.js`, `myday.jsx`,
-  `tokens.css`) that reads the `shifts` table.
+- **Student hub** (`index.html`, served at `/`) — a plain HTML/CSS landing
+  page. A navigation hub that will link out to student tools under
+  `/tools/<name>` as they are built.
+- **Instructor hub** (`instructors/`, served at `/instructors`) — a React page
+  showing the current week's EMS lab shifts (date, AM/PM, cohort, class,
+  instructors), read from a Supabase `shifts` table.
 - **Data pipeline** — Python in `scripts/` that pulls shifts from Humanity.com
-  and writes the `shifts` table.
+  and writes that `shifts` table.
 
-Neither half imports the other. The `shifts` table (`sql/001_shifts.sql`) is the
-entire contract between them — the sync writes it with the service key, the
-browser reads it with the anon key.
+The instructor hub and the pipeline are joined only by the `shifts` table
+(`sql/001_shifts.sql`) — the sync writes it with the service key, the browser
+reads it with the anon key. `shared/tokens.css` holds the design tokens used by
+every page.
 
 ## Commands
 
@@ -39,8 +43,8 @@ $PY scripts/sync_to_supabase.py                    # fetch Humanity + upsert
 $PY scripts/sync_to_supabase.py --from 2026-06-01 --to 2026-06-05
 $PY scripts/sync_to_supabase.py --input shifts.json   # skip the Humanity call
 
-# Preview the frontend (needed — file:// breaks Babel's XHR fetch of myday.jsx)
-python3 -m http.server 8000      # then open http://localhost:8000
+# Preview the site (needed — file:// breaks Babel's XHR fetch of myday.jsx)
+python3 -m http.server 8000      # / = student hub, /instructors/ = instructor hub
 ```
 
 Schema changes: paste `sql/001_shifts.sql` into the Supabase SQL editor. It is
@@ -51,22 +55,31 @@ Deployment: Vercel auto-deploys on push to `main`. There is no build step and no
 
 ## Frontend architecture
 
-No bundler. `index.html` pulls React 18, ReactDOM, `@babel/standalone`, and
-`supabase-js` from CDNs, then loads the three local files. Babel transpiles
-`myday.jsx` in the browser at load time.
+No bundler — folders map directly to URL paths on Vercel. `/` serves the root
+`index.html` (student hub); `/instructors` serves `instructors/index.html`.
+Future student tools go under `tools/<name>/index.html`, served at
+`/tools/<name>`. `shared/tokens.css` is the design system shared by every page.
 
-Boot sequence (`index.html`):
-1. `await window.loadParamedicData()` — defined in `data.js`.
-2. `ReactDOM.createRoot(...).render(<D5MyDay />)` — `D5MyDay` is from `myday.jsx`.
+**Student hub** (`index.html`) — plain HTML/CSS, no JavaScript framework. A
+navigation shell that links out to tools as they are added.
 
-`data.js` fetches the current week's rows from the Supabase `shifts` table and
-assembles `window.PARAMEDIC_DATA` in the exact shape `myday.jsx` consumes
-(`schedule[cohortId][dayIdx] = { am, pm }`). The shape contract is documented in
-the header comment of `data.js` — keep producer and consumer in sync.
+**Instructor hub** (`instructors/`) — `instructors/index.html` pulls React 18,
+ReactDOM, `@babel/standalone`, and `supabase-js` from CDNs, then loads its two
+sibling files (`data.js`, `myday.jsx`) and `../shared/tokens.css`. Babel
+transpiles `myday.jsx` in the browser at load time. Boot sequence:
+1. `await window.loadParamedicData()` — defined in `instructors/data.js`.
+2. `ReactDOM.createRoot(...).render(<D5MyDay />)` — `D5MyDay` from `instructors/myday.jsx`.
 
-`myday.jsx` is a single React component tree (`D5MyDay` → `D5ShiftCard` →
-`D5InstructorBlock` / `D5ScenarioGroup`). All styling is inline styles plus the
-CSS custom properties and pill/rail classes defined in `tokens.css`.
+`instructors/data.js` fetches the current week's rows from the Supabase `shifts`
+table and assembles `window.PARAMEDIC_DATA` in the exact shape `myday.jsx`
+consumes (`schedule[cohortId][dayIdx] = { am, pm }`). The shape contract is
+documented in the header comment of `data.js` — keep producer and consumer in
+sync.
+
+`instructors/myday.jsx` is a single React component tree (`D5MyDay` →
+`D5ShiftCard` → `D5InstructorBlock` / `D5ScenarioGroup`). All styling is inline
+styles plus the CSS custom properties and pill/rail classes defined in
+`shared/tokens.css`.
 
 ## Data pipeline architecture
 
@@ -88,7 +101,7 @@ The file is split into pure helpers (tested in `tests/`) and an I/O shell
 new logic pure and tested where possible.
 
 `scripts/class_titles.py` is the **only** file to edit when relabeling a class
-on the homepage. An empty string normalizes to `NULL`, and the frontend then
+on the instructor hub. An empty string normalizes to `NULL`, and the frontend then
 falls back to `EMS-<id>`. Class 917 is intentionally absent (unused class
 number).
 
@@ -96,18 +109,18 @@ number).
 
 - **Secrets:** `.env` (gitignored) holds `SUPABASE_URL` and
   `SUPABASE_SERVICE_KEY`. The service key has full write access — never put it in
-  the browser. `data.js` intentionally embeds the **anon** key and URL; that key
+  the browser. `instructors/data.js` intentionally embeds the **anon** key and URL; that key
   can only `SELECT` (`shifts` has RLS with a `public read` policy).
 - **Humanity auth:** the sync inherits the matc-humanity skill's bearer token.
   If it is missing or expired, the sync exits 1 with refresh instructions — this
   is a token problem, not a code bug.
-- **Duplicated week logic:** `data.js` `currentWeekRange()` and
+- **Duplicated week logic:** `instructors/data.js` `currentWeekRange()` and
   `sync_to_supabase.py` `current_week_range()` implement the same convention
   (Mon–Fri of the ISO week; weekends resolve back to the just-ended week).
   Change one, change the other.
 - **Reserved columns:** `type` and `room` exist in the table but are always
   `NULL` in v1. They are reserved for v2 (pill colors and the room label). The
-  `scenarios` per-instructor UI in `myday.jsx` is likewise dormant — v1 shifts
+  `scenarios` per-instructor UI in `instructors/myday.jsx` is likewise dormant — v1 shifts
   have no scenarios, so `window.PD.scenariosByInstructor` returns `null` and the
   component renders a flat instructor list.
 - **Specs and plans** for past work live in `docs/superpowers/`. The
