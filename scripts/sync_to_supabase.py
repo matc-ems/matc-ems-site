@@ -172,6 +172,50 @@ def load_workflow_json(path: str) -> list[dict]:
     return data
 
 
+def attach_activities(rows, *, get_values=None, resolve=None):
+    """Attach an `activities` blob to every shift row, in place.
+
+    Fetches each cohort's sheet tab once (cached). A cohort whose tab is missing
+    or still in the old format gets `empty_activities()` for all its shifts,
+    with a warning. `get_values` / `resolve` are injectable for tests; they
+    default to the gws-backed functions in sheet_activities.
+    """
+    import sheet_activities as sa
+
+    if get_values is None:
+        get_values = sa.gws_get_values
+    if resolve is None:
+        resolve = sa.resolve_doc_title
+
+    tab_cache = {}  # cohort_number -> data rows (None means an unusable tab)
+
+    def cohort_data(cohort_number):
+        if cohort_number not in tab_cache:
+            values = get_values(cohort_number)
+            if values and sa.is_new_format(values[0]):
+                tab_cache[cohort_number] = values[1:]
+            else:
+                sys.stderr.write(
+                    f"warning: Cohort {cohort_number} sheet tab is empty or "
+                    f"not the 14-column activity format; no activities for it\n"
+                )
+                tab_cache[cohort_number] = None
+        return tab_cache[cohort_number]
+
+    for row in rows:
+        data_rows = cohort_data(row["cohort_number"])
+        if data_rows is None:
+            row["activities"] = sa.empty_activities()
+            continue
+        row["activities"] = sa.build_activities(
+            data_rows,
+            date.fromisoformat(row["shift_date"]),
+            row["am_pm"],
+            row["instructors"],
+            resolve=resolve,
+        )
+
+
 def upsert_to_supabase(rows: list[dict], *, supabase_url: str, service_key: str) -> None:
     """POST rows to Supabase PostgREST as an upsert keyed on the unique index.
 
@@ -238,13 +282,30 @@ def main(argv: list[str] | None = None) -> None:
         if shift["class_id"] not in CLASS_TITLES or not CLASS_TITLES[shift["class_id"]]:
             missing_titles.add(shift["class_id"])
 
+    # Attach activity-sheet data (unless skipped).
+    if not args.skip_activities:
+        try:
+            attach_activities(rows)
+        except RuntimeError as exc:
+            sys.stderr.write(
+                f"{exc}\n\n"
+                "The activity-sheet pull needs the `gws` CLI authenticated.\n"
+                "Run `gws auth login` and retry, or pass --skip-activities to "
+                "sync shifts only.\n"
+            )
+            sys.exit(4)
+
     # Report per-shift.
     for r in rows:
         n_inst = len(r["instructors"])
+        acts = r.get("activities") or {}
+        n_shared = len(acts.get("shared", []))
+        n_scn = sum(len(v) for v in acts.get("perInstructor", {}).values())
         print(
             f"{r['shift_date']} {r['am_pm'].upper():2} "
             f"C{r['cohort_number']} #{r['class_id']} — "
-            f"{n_inst} instructor{'s' if n_inst != 1 else ''}"
+            f"{n_inst} instructor{'s' if n_inst != 1 else ''}, "
+            f"{n_shared} shared, {n_scn} scenario{'s' if n_scn != 1 else ''}"
         )
 
     if missing_titles:

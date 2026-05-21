@@ -309,5 +309,56 @@ class TestUpsertToSupabase(unittest.TestCase):
         mock_post.assert_not_called()
 
 
+class TestAttachActivities(unittest.TestCase):
+    HEADER = [
+        "date", "day_of_week", "shift", "start_time", "end_time", "duration_min",
+        "activity_type", "activity_id", "activity_title", "activity_description",
+        "scenario_slugs", "scenario_links", "pp_skill_links", "activity_links",
+    ]
+
+    def _row(self, sheet_date, start, slugs=""):
+        r = [""] * 14
+        r[0] = sheet_date
+        r[3] = start
+        r[10] = slugs
+        return r
+
+    def _shift_row(self, cohort, shift_date, am_pm):
+        return {
+            "shift_date": shift_date, "am_pm": am_pm, "cohort_number": cohort,
+            "class_id": 916, "instructors": [{"name": "A", "role": "Lead"}],
+        }
+
+    def test_attaches_built_activities(self):
+        tab = [self.HEADER, self._row("05-20-26", "8:00", "scn1")]
+        rows = [self._shift_row(3, "2026-05-20", "am")]
+        s.attach_activities(rows, get_values=lambda c: tab, resolve=lambda u: u)
+        self.assertEqual(
+            rows[0]["activities"]["perInstructor"],
+            {"A": [{"label": "scn1",
+                    "href": "https://matc-ems.github.io/scenarios/main-lab/scn1"}]},
+        )
+
+    def test_old_format_tab_yields_empty(self):
+        old_tab = [["Class Date", "Start Time", "End Time", "Room", "Topic"]]
+        rows = [self._shift_row(1, "2026-05-20", "am")]
+        s.attach_activities(rows, get_values=lambda c: old_tab,
+                            resolve=lambda u: u)
+        self.assertEqual(rows[0]["activities"],
+                         {"perInstructor": {}, "shared": []})
+
+    def test_tab_fetched_once_per_cohort(self):
+        calls = []
+
+        def fake_get(cohort):
+            calls.append(cohort)
+            return [self.HEADER]
+
+        rows = [self._shift_row(3, "2026-05-20", "am"),
+                self._shift_row(3, "2026-05-20", "pm")]
+        s.attach_activities(rows, get_values=fake_get, resolve=lambda u: u)
+        self.assertEqual(calls, [3])  # one fetch despite two cohort-3 shifts
+
+
 if __name__ == "__main__":
     unittest.main()
