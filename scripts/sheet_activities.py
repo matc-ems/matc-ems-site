@@ -85,6 +85,42 @@ def is_new_format(header_row):
     return cleaned == EXPECTED_HEADER
 
 
+_DOC_ID_RE = re.compile(r"/d/([A-Za-z0-9_-]+)|[?&]id=([A-Za-z0-9_-]+)")
+
+
+def resolve_doc_title(url):
+    """Best-effort: return a Google Doc/Drive file's title for a URL.
+
+    Falls back to the URL itself for a non-Drive link or any `gws` failure —
+    this is cosmetic enrichment and must never break the pull.
+    """
+    match = _DOC_ID_RE.search(url)
+    if not match:
+        return url
+    file_id = match.group(1) or match.group(2)
+    try:
+        result = subprocess.run(
+            ["gws", "drive", "files", "get", "--params",
+             json.dumps({"fileId": file_id, "fields": "name",
+                         "supportsAllDrives": True}),
+             "--format", "json"],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            return url
+        brace = result.stdout.find("{")
+        if brace == -1:
+            return url
+        return json.loads(result.stdout[brace:]).get("name") or url
+    except Exception:
+        return url
+
+
+def empty_activities():
+    """The `activities` blob for a shift with no sheet data."""
+    return {"perInstructor": {}, "shared": []}
+
+
 def round_robin(pool, n_instructors):
     """Distribute `pool` across `n_instructors`, round-robin, evenly.
 

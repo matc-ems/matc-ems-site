@@ -74,6 +74,30 @@ class TestIsNewFormat(unittest.TestCase):
         self.assertFalse(sa.is_new_format([]))
 
 
+class TestResolveDocTitle(unittest.TestCase):
+    def test_non_drive_url_returns_url(self):
+        self.assertEqual(sa.resolve_doc_title("https://example.com/x"),
+                         "https://example.com/x")
+
+    def test_resolves_doc_title(self):
+        url = "https://docs.google.com/document/d/ABC123/edit"
+        fake = MagicMock(returncode=0, stdout='{"name": "My Doc"}')
+        with patch.object(sa.subprocess, "run", return_value=fake):
+            self.assertEqual(sa.resolve_doc_title(url), "My Doc")
+
+    def test_gws_failure_falls_back_to_url(self):
+        url = "https://docs.google.com/document/d/ABC123/edit"
+        fake = MagicMock(returncode=1, stdout="", stderr="boom")
+        with patch.object(sa.subprocess, "run", return_value=fake):
+            self.assertEqual(sa.resolve_doc_title(url), url)
+
+
+class TestEmptyActivities(unittest.TestCase):
+    def test_shape(self):
+        self.assertEqual(sa.empty_activities(),
+                         {"perInstructor": {}, "shared": []})
+
+
 class TestRoundRobin(unittest.TestCase):
     def test_six_items_three_instructors(self):
         # per = 2: I0 gets items 0,3 · I1 gets 1,4 · I2 gets 2,5.
