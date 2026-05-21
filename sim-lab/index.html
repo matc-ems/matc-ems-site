@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MATC Paramedic Lab · Sim Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/tokens.css">
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  body { min-height: 100vh; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 28px 36px 48px; }
+
+  .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+  .badge {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: var(--accent); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px;
+  }
+  .brand-kicker {
+    font-size: 11px; font-family: var(--font-mono);
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-soft);
+  }
+  .brand-name { font-size: 14px; font-weight: 500; }
+
+  .hero { padding: 12px 0 22px; border-bottom: 1px solid var(--line); margin-bottom: 28px; }
+  .hero h1 {
+    font-family: var(--font-serif); font-weight: 400;
+    font-size: 52px; line-height: 1.0; margin: 0;
+  }
+  .hero p { font-size: 16px; color: var(--ink-soft); margin: 10px 0 0; }
+
+  .category { margin-bottom: 30px; }
+  .category-label {
+    font-family: var(--font-serif); font-size: 28px; line-height: 1; margin-bottom: 12px;
+  }
+  .tier-label {
+    font-size: 11px; font-family: var(--font-mono);
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft);
+    margin: 16px 0 8px;
+  }
+  .scenario {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 10px 14px; margin-bottom: 6px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background: var(--bg-card);
+    text-decoration: none; color: var(--ink);
+  }
+  .scenario:hover { border-color: var(--accent); }
+  .scenario-code {
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--ink-soft); min-width: 64px;
+  }
+  .scenario-name { font-size: 14px; font-weight: 500; }
+  .empty {
+    background: var(--bg-sunk); border-radius: 10px;
+    padding: 32px; text-align: center; font-size: 14px; color: var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="badge">+</div>
+      <div>
+        <div class="brand-kicker">MATC Paramedic Lab</div>
+        <div class="brand-name">Sim Lab</div>
+      </div>
+    </div>
+
+    <div class="hero">
+      <h1>Sim Lab</h1>
+      <p>Interactive simulation scenarios for the MATC paramedic program.</p>
+    </div>
+
+    <div id="scenario-list"></div>
+  </div>
+
+  <script src="/sim-lab/scenarios.js"></script>
+  <script>
+    (function () {
+      var TIERS = ["T1", "T2", "T3"];
+      var scenarios = window.SIM_LAB_SCENARIOS || [];
+      var root = document.getElementById("scenario-list");
+
+      if (scenarios.length === 0) {
+        var empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "No scenarios available.";
+        root.appendChild(empty);
+        return;
+      }
+
+      // Group by category, preserving the order scenarios.js is already sorted in.
+      var categories = [];
+      var byCategory = {};
+      scenarios.forEach(function (s) {
+        if (!byCategory[s.category]) {
+          byCategory[s.category] = [];
+          categories.push(s.category);
+        }
+        byCategory[s.category].push(s);
+      });
+
+      categories.forEach(function (cat) {
+        var section = document.createElement("div");
+        section.className = "category";
+
+        var label = document.createElement("div");
+        label.className = "category-label";
+        label.textContent = cat;
+        section.appendChild(label);
+
+        TIERS.forEach(function (tier) {
+          var inTier = byCategory[cat].filter(function (s) {
+            return s.tier === tier;
+          });
+          if (inTier.length === 0) return;
+
+          var tierLabel = document.createElement("div");
+          tierLabel.className = "tier-label";
+          tierLabel.textContent = "Tier " + tier.slice(1);
+          section.appendChild(tierLabel);
+
+          inTier.forEach(function (s) {
+            var a = document.createElement("a");
+            a.className = "scenario";
+            a.href = s.url;
+            a.target = "_blank";
+            a.rel = "noopener";
+
+            var code = document.createElement("span");
+            code.className = "scenario-code";
+            code.textContent = s.code;
+            a.appendChild(code);
+
+            var name = document.createElement("span");
+            name.className = "scenario-name";
+            name.textContent = s.name;
+            a.appendChild(name);
+
+            section.appendChild(a);
+          });
+        });
+
+        root.appendChild(section);
+      });
+    })();
+  </script>
+</body>
+</html>
