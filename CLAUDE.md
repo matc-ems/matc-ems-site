@@ -31,7 +31,10 @@ The sync script and the test suite run on the **matc-humanity skill's
 virtualenv**, not system Python — that venv is where `requests` and
 `python-dotenv` live. Do not `pip install` into system Python.
 `build_sim_lab_index.py` uses only the standard library and runs on plain
-`python3`. Run everything below from the repo root.
+`python3`. The sync also shells out to the `gws` CLI to read the activity
+sheet; it must be on PATH and authenticated (`gws auth login`). Pass
+`--skip-activities` to run the sync without it. Run everything below from the
+repo root.
 
 ```bash
 PY=~/.claude/skills/matc-humanity/.venv/bin/python
@@ -48,6 +51,7 @@ $PY scripts/sync_to_supabase.py --dry-run          # print rows, no write
 $PY scripts/sync_to_supabase.py                    # fetch Humanity + upsert
 $PY scripts/sync_to_supabase.py --from 2026-06-01 --to 2026-06-05
 $PY scripts/sync_to_supabase.py --input shifts.json   # skip the Humanity call
+$PY scripts/sync_to_supabase.py --skip-activities     # shifts only, no sheet/gws
 
 # Regenerate sim-lab/scenarios.js from the sibling matc-ems/scenarios repo
 python3 scripts/build_sim_lab_index.py
@@ -56,8 +60,9 @@ python3 scripts/build_sim_lab_index.py
 python3 -m http.server 8000      # pages: / · /instructors/ · /sim-lab/
 ```
 
-Schema changes: paste `sql/001_shifts.sql` into the Supabase SQL editor. It is
-idempotent (`create ... if not exists`), so re-running is safe.
+Schema changes: paste the files in `sql/` (`001_shifts.sql`, then
+`002_activities_column.sql`) into the Supabase SQL editor, in order. They are
+idempotent, so re-running is safe.
 
 Deployment: Vercel auto-deploys on push to `main`. There is no build step and no
 `package.json` — what is committed is what ships.
@@ -134,6 +139,16 @@ on the instructor hub. An empty string normalizes to `NULL`, and the frontend th
 falls back to `EMS-<id>`. Class 917 is intentionally absent (unused class
 number).
 
+`scripts/sheet_activities.py` pulls per-shift lab activities from the "Lesson
+Plan Material" Google Sheet (one tab per cohort) via the `gws` CLI. For each
+Humanity shift, `sync_to_supabase.py` calls `build_activities()` to assemble the
+`activities` JSONB blob — scenario slugs/links round-robin'd across the shift's
+instructors, and `pp_skill_links` / `activity_links` grouped by activity name
+for everyone. A cohort tab that is missing or still in the old format yields
+empty activities (the shift then renders with just its instructor list). This
+re-implements logic that overlaps the matc-lesson-plan skill's
+`pull_activity_data.py` so the site pipeline stays self-contained and testable.
+
 ## Things to know
 
 - **Secrets:** `.env` (gitignored) holds `SUPABASE_URL` and
@@ -148,10 +163,13 @@ number).
   (Mon–Fri of the ISO week; weekends resolve back to the just-ended week).
   Change one, change the other.
 - **Reserved columns:** `type` and `room` exist in the table but are always
-  `NULL` in v1. They are reserved for v2 (pill colors and the room label). The
-  `scenarios` per-instructor UI in `instructors/myday.jsx` is likewise dormant — v1 shifts
-  have no scenarios, so `window.PD.scenariosByInstructor` returns `null` and the
-  component renders a flat instructor list.
+  `NULL` in v1. They are reserved for v2 (pill colors and the room label).
+- **Activity data:** `shifts.activities` (JSONB) holds the resolved per-shift
+  lab activities — `{perInstructor, shared}` — written by `sync_to_supabase.py`
+  from the "Lesson Plan Material" sheet and rendered directly by
+  `instructors/myday.jsx`. The sync needs the `gws` CLI authenticated; a `gws`
+  failure aborts the run with a re-auth message. `--skip-activities` runs the
+  Humanity-only sync.
 - **Specs and plans** for past work live in `docs/superpowers/`. The
   weekly-sync design doc there is the authoritative description of v1 scope and
   the deferred v2 items.
