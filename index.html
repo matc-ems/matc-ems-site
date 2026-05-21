@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MATC Paramedic Lab · Student Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/tokens.css">
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--ink);
+    font-family: var(--font-sans);
+  }
+  body { min-height: 100vh; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 28px 36px 48px; }
+
+  .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+  .badge {
+    width: 30px; height: 30px; border-radius: 7px;
+    background: var(--accent); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px;
+  }
+  .brand-kicker {
+    font-size: 11px; font-family: var(--font-mono);
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-soft);
+  }
+  .brand-name { font-size: 14px; font-weight: 500; }
+
+  .hero { padding: 12px 0 22px; border-bottom: 1px solid var(--line); margin-bottom: 28px; }
+  .hero h1 {
+    font-family: var(--font-serif); font-weight: 400;
+    font-size: 52px; line-height: 1.0; margin: 0;
+  }
+  .hero p { font-size: 16px; color: var(--ink-soft); margin: 10px 0 0; }
+
+  .section-label {
+    font-size: 11px; font-family: var(--font-mono);
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-soft);
+    margin-bottom: 12px;
+  }
+  .empty {
+    background: var(--bg-sunk); border-radius: 10px;
+    padding: 32px; text-align: center;
+    font-size: 14px; color: var(--ink-soft);
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="badge">+</div>
+      <div>
+        <div class="brand-kicker">MATC Paramedic Lab</div>
+        <div class="brand-name">Student Hub</div>
+      </div>
+    </div>
+
+    <div class="hero">
+      <h1>Student Hub</h1>
+      <p>Tools and resources for the MATC paramedic program.</p>
+    </div>
+
+    <div class="section-label">Tools</div>
+    <div class="empty">Tools coming soon.</div>
+  </div>
+</body>
+</html>
