@@ -44,16 +44,22 @@ def cell(row, idx):
 
 
 def parse_sheet_date(value):
-    """Parse a sheet date 'MM-DD-YY' into a date. Lenient on leading zeros.
+    """Parse a sheet date into a date. Accepts both 'MM-DD-YY' and ISO
+    'YYYY-MM-DD' — the sheet is hand-maintained and uses both. Lenient on
+    leading zeros.
 
     Raises ValueError on anything that is not three integer parts.
     """
     parts = value.strip().split("-")
     if len(parts) != 3:
         raise ValueError(f"bad sheet date: {value!r}")
-    month, day, year = (int(p) for p in parts)
-    if year < 100:
-        year += 2000
+    a, b, c = (int(p) for p in parts)
+    if len(parts[0]) == 4:         # ISO: YYYY-MM-DD
+        year, month, day = a, b, c
+    else:                          # US short: MM-DD-YY
+        month, day, year = a, b, c
+        if year < 100:
+            year += 2000
     return date(year, month, day)
 
 

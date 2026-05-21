@@ -26,6 +26,10 @@ class TestParseSheetDate(unittest.TestCase):
     def test_no_leading_zeros(self):
         self.assertEqual(sa.parse_sheet_date("1-5-26"), date(2026, 1, 5))
 
+    def test_iso_format(self):
+        # The sheet also uses ISO YYYY-MM-DD for some rows.
+        self.assertEqual(sa.parse_sheet_date("2026-05-18"), date(2026, 5, 18))
+
     def test_bad_value_raises(self):
         with self.assertRaises(ValueError):
             sa.parse_sheet_date("not-a-date")
