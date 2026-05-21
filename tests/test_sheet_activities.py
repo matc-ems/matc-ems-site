@@ -74,6 +74,90 @@ class TestIsNewFormat(unittest.TestCase):
         self.assertFalse(sa.is_new_format([]))
 
 
+class TestBuildActivities(unittest.TestCase):
+    # Identity resolver so tests are deterministic and gws-free.
+    RESOLVE = staticmethod(lambda url: url)
+
+    @staticmethod
+    def row(date="01-21-26", start="8:00", title="", slugs="", scen_links="",
+            pp_links="", act_links=""):
+        # 14-column row (A–N); only the columns build_activities reads matter.
+        r = [""] * 14
+        r[sa.COL_DATE] = date
+        r[sa.COL_START] = start
+        r[sa.COL_TITLE] = title
+        r[sa.COL_SCENARIO_SLUGS] = slugs
+        r[sa.COL_SCENARIO_LINKS] = scen_links
+        r[sa.COL_PP_SKILL_LINKS] = pp_links
+        r[sa.COL_ACTIVITY_LINKS] = act_links
+        return r
+
+    def test_scenarios_round_robin_per_instructor(self):
+        rows = [self.row(start="8:00", slugs="s1, s2, s3, s4")]
+        out = sa.build_activities(rows, date(2026, 1, 21), "am",
+                                  [{"name": "A"}, {"name": "B"}],
+                                  resolve=self.RESOLVE)
+        self.assertEqual(out["perInstructor"], {
+            "A": [{"label": "s1", "href": sa.SLUG_BASE_URL + "s1"},
+                  {"label": "s3", "href": sa.SLUG_BASE_URL + "s3"}],
+            "B": [{"label": "s2", "href": sa.SLUG_BASE_URL + "s2"},
+                  {"label": "s4", "href": sa.SLUG_BASE_URL + "s4"}],
+        })
+        self.assertEqual(out["shared"], [])
+
+    def test_shared_groups_by_activity_title(self):
+        rows = [self.row(start="9:00", title="XABC Cards",
+                         act_links="http://u1, http://u2")]
+        out = sa.build_activities(rows, date(2026, 1, 21), "am",
+                                  [{"name": "A"}], resolve=self.RESOLVE)
+        self.assertEqual(out["shared"], [
+            {"name": "XABC Cards",
+             "links": [{"label": "http://u1", "href": "http://u1"},
+                       {"label": "http://u2", "href": "http://u2"}]}])
+        self.assertEqual(out["perInstructor"], {})
+
+    def test_am_pm_split(self):
+        rows = [self.row(start="8:00", slugs="morning"),
+                self.row(start="13:00", slugs="afternoon")]
+        out = sa.build_activities(rows, date(2026, 1, 21), "pm",
+                                  [{"name": "A"}], resolve=self.RESOLVE)
+        self.assertEqual(out["perInstructor"], {
+            "A": [{"label": "afternoon",
+                   "href": sa.SLUG_BASE_URL + "afternoon"}]})
+
+    def test_no_matching_rows_is_empty(self):
+        rows = [self.row(date="02-02-26", slugs="x")]
+        out = sa.build_activities(rows, date(2026, 1, 21), "am",
+                                  [{"name": "A"}], resolve=self.RESOLVE)
+        self.assertEqual(out, {"perInstructor": {}, "shared": []})
+
+    def test_partially_filled_rows(self):
+        # Title but no links -> no shared group. Links but blank title ->
+        # group with name "".
+        rows = [self.row(start="8:00", title="Just a title"),
+                self.row(start="9:00", title="", pp_links="http://only")]
+        out = sa.build_activities(rows, date(2026, 1, 21), "am",
+                                  [{"name": "A"}], resolve=self.RESOLVE)
+        self.assertEqual(out["shared"], [
+            {"name": "", "links": [{"label": "http://only",
+                                    "href": "http://only"}]}])
+        self.assertEqual(out["perInstructor"], {})
+
+    def test_unparseable_row_is_skipped(self):
+        rows = [self.row(date="bad-date", start="8:00", slugs="skipme"),
+                self.row(date="01-21-26", start="8:00", slugs="keep")]
+        out = sa.build_activities(rows, date(2026, 1, 21), "am",
+                                  [{"name": "A"}], resolve=self.RESOLVE)
+        self.assertEqual(out["perInstructor"], {
+            "A": [{"label": "keep", "href": sa.SLUG_BASE_URL + "keep"}]})
+
+    def test_zero_instructors_drops_scenarios(self):
+        rows = [self.row(start="8:00", slugs="s1, s2")]
+        out = sa.build_activities(rows, date(2026, 1, 21), "am", [],
+                                  resolve=self.RESOLVE)
+        self.assertEqual(out["perInstructor"], {})
+
+
 class TestResolveDocTitle(unittest.TestCase):
     def test_non_drive_url_returns_url(self):
         self.assertEqual(sa.resolve_doc_title("https://example.com/x"),

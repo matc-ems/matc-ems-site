@@ -138,3 +138,70 @@ def round_robin(pool, n_instructors):
     for k, item in enumerate(used):
         buckets[k % n_instructors].append(item)
     return buckets
+
+
+def _matching_rows(data_rows, target_date, am_pm):
+    """Data rows for `target_date` whose start_time is in the am/pm block.
+
+    Rows with a blank or unparseable date/start_time are skipped (a warning is
+    printed for unparseable ones). The result is sorted by start_time.
+    """
+    matched = []
+    for row in data_rows:
+        raw_date = cell(row, COL_DATE)
+        raw_start = cell(row, COL_START)
+        if not raw_date or not raw_start:
+            continue
+        try:
+            row_date = parse_sheet_date(raw_date)
+            row_start = parse_clock(raw_start)
+        except ValueError:
+            sys.stderr.write(
+                f"warning: skipping unparseable activity row "
+                f"(date={raw_date!r}, start={raw_start!r})\n"
+            )
+            continue
+        if row_date == target_date and derive_am_pm(row_start) == am_pm:
+            matched.append((row_start, row))
+    matched.sort(key=lambda pair: pair[0])
+    return [row for _, row in matched]
+
+
+def build_activities(data_rows, target_date, am_pm, instructors,
+                     *, resolve=resolve_doc_title):
+    """Assemble the `{perInstructor, shared}` blob for one shift.
+
+    `data_rows` is the cohort tab's rows without the header. `instructors` is the
+    shift's instructor list in Humanity order (each a dict with a "name").
+    `resolve` maps a link URL to a display label — defaults to `resolve_doc_title`;
+    tests inject a pure function. Best-effort: unparseable rows are skipped and
+    blank cells contribute nothing.
+    """
+    rows = _matching_rows(data_rows, target_date, am_pm)
+
+    # Per-instructor pool: each row's scenario slugs then scenario links.
+    pool = []
+    for row in rows:
+        for slug in split_cell(cell(row, COL_SCENARIO_SLUGS)):
+            pool.append({"label": slug, "href": SLUG_BASE_URL + slug})
+        for link in split_cell(cell(row, COL_SCENARIO_LINKS)):
+            pool.append({"label": resolve(link), "href": link})
+
+    names = [i["name"] for i in instructors]
+    buckets = round_robin(pool, len(names))
+    per_instructor = {
+        name: bucket for name, bucket in zip(names, buckets) if bucket
+    }
+
+    # Shared groups: one per row carrying pp_skill_links or activity_links.
+    shared = []
+    for row in rows:
+        links = []
+        for url in split_cell(cell(row, COL_PP_SKILL_LINKS)):
+            links.append({"label": resolve(url), "href": url})
+        for url in split_cell(cell(row, COL_ACTIVITY_LINKS)):
+            links.append({"label": resolve(url), "href": url})
+        if links:
+            shared.append({"name": cell(row, COL_TITLE), "links": links})
+
+    return {"perInstructor": per_instructor, "shared": shared}
