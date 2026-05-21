@@ -1186,4 +1186,4 @@ The following are deliberately excluded and have their own future specs:
 - Scheduled/automated sync (cron, GitHub Actions, Supabase Edge Function).
 - Roles beyond Lead/Assist (Examiner, Preceptor, etc.).
 
-When the homepage rewrite happens, it will read from this table with the anon key already baked into `index.html`. Until then, the live Vercel page still shows "No tasks found" because it queries `weekly_tasks`, not `shifts`. That's expected.
+The homepage rewrite (since completed) reads from this table with the anon key baked into `index.html` — see `data.js`.

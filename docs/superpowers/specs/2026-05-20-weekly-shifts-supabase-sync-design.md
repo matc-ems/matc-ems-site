@@ -213,7 +213,7 @@ The following are deliberately *not* in this spec. Each can be added without rew
 
 - **Scenarios sub-table.** v2 will add `scenarios (shift_id FK, title, href, assigned_to, ord)` and the sync script will read them from the Cohort 3 activity sheet / lesson-plan output.
 - **`type` and `room` population.** Columns exist but are unused. v2 can extend `CLASS_TITLES` into `CLASS_INFO` with `{title, type, room}` per id.
-- **Frontend rewrite.** `index.html` currently queries the wrong table (`weekly_tasks`). Until that file is rewritten, the live Vercel page will keep showing "No tasks found" even after this sync runs successfully — the table will populate, but nothing is yet reading it. The rewrite is its own spec, downstream of this one.
+- **Frontend rewrite.** Reading the `shifts` table from `index.html` is its own task, downstream of this one. (Since completed — `index.html`/`data.js` now query `shifts` directly.)
 - **Scheduled sync.** Manual `python scripts/sync_to_supabase.py` for now. Cron/GitHub Action can be added once the bearer-token refresh story is worked out.
 - **Multiple instructor roles beyond Lead/Assist.** No "Examiner", "Preceptor" derivation yet — those exist in the reference UI but require info Humanity doesn't expose.
 
