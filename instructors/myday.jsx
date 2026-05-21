@@ -34,7 +34,7 @@ function D5MyDay() {
           }}>+</div>
           <div>
             <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.14em", color: "var(--ink-soft)" }}>
-              MATC Paramedic Lab
+              MATC EMS Department
             </div>
             <div style={{ fontSize: 14, fontWeight: 500 }}>Instructor Hub</div>
           </div>
