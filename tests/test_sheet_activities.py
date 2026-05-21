@@ -74,6 +74,29 @@ class TestIsNewFormat(unittest.TestCase):
         self.assertFalse(sa.is_new_format([]))
 
 
+class TestGwsGetValues(unittest.TestCase):
+    def test_returns_values_on_success(self):
+        payload = '{"values": [["date", "x"], ["01-21-26", "y"]]}'
+        fake = MagicMock(returncode=0, stdout=payload)
+        with patch.object(sa.subprocess, "run", return_value=fake):
+            rows = sa.gws_get_values(3)
+        self.assertEqual(rows, [["date", "x"], ["01-21-26", "y"]])
+
+    def test_requests_the_cohort_tab(self):
+        fake = MagicMock(returncode=0, stdout='{"values": []}')
+        with patch.object(sa.subprocess, "run", return_value=fake) as mock_run:
+            sa.gws_get_values(3)
+        cmd = mock_run.call_args[0][0]
+        params = json.loads(cmd[cmd.index("--params") + 1])
+        self.assertEqual(params["range"], "'Cohort 3'!A1:N1000")
+
+    def test_nonzero_exit_raises_runtimeerror(self):
+        fake = MagicMock(returncode=1, stdout="", stderr="auth expired")
+        with patch.object(sa.subprocess, "run", return_value=fake):
+            with self.assertRaises(RuntimeError):
+                sa.gws_get_values(3)
+
+
 class TestBuildActivities(unittest.TestCase):
     # Identity resolver so tests are deterministic and gws-free.
     RESOLVE = staticmethod(lambda url: url)

@@ -205,3 +205,31 @@ def build_activities(data_rows, target_date, am_pm, instructors,
             shared.append({"name": cell(row, COL_TITLE), "links": links})
 
     return {"perInstructor": per_instructor, "shared": shared}
+
+
+def gws_get_values(cohort_number):
+    """Fetch the `Cohort N` tab's cells via the `gws` CLI.
+
+    Returns the raw rows (header included). Raises RuntimeError on any `gws`
+    failure — the caller turns that into a hard stop with a re-auth message.
+    """
+    tab = f"Cohort {cohort_number}"
+    cmd = [
+        "gws", "sheets", "spreadsheets", "values", "get",
+        "--params", json.dumps({
+            "spreadsheetId": SPREADSHEET_ID,
+            "range": f"'{tab}'!A1:N1000",
+        }),
+        "--format", "json",
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"gws failed for tab {tab!r}: {result.stderr or result.stdout}"
+        )
+    brace = result.stdout.find("{")
+    if brace == -1:
+        raise RuntimeError(
+            f"no JSON in gws output for tab {tab!r}: {result.stdout!r}"
+        )
+    return json.loads(result.stdout[brace:]).get("values", [])
