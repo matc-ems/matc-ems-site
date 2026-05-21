@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-The MATC Paramedic Lab site — a build-less static site with two front-end
+The MATC EMS Department site — a build-less static site with two front-end
 pages plus a Python data pipeline:
 
 - **Student hub** (`index.html`, served at `/`) — a plain HTML/CSS landing
