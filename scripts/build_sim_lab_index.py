@@ -8,8 +8,12 @@ Run from the matc-ems-site repo root:
 """
 from __future__ import annotations
 
+import argparse
 import json
+import os
 import re
+import sys
+from pathlib import Path
 
 # Category letter -> display name (matc-ems/scenarios convention).
 CATEGORIES = {
@@ -90,3 +94,74 @@ def render_js(entries):
         "// Re-run that script when sim-lab scenarios are added or renamed.\n"
         f"window.SIM_LAB_SCENARIOS = {body};\n"
     )
+
+
+def read_scenario_name(unified_json_path):
+    """Return meta.name from a unified.json file, or None if unavailable.
+
+    Missing file, invalid JSON, or an absent/blank/malformed meta.name all
+    return None; the caller then falls back to the scenario code as the
+    display name.
+    """
+    try:
+        with open(unified_json_path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+    meta = data.get("meta") if isinstance(data, dict) else None
+    name = meta.get("name") if isinstance(meta, dict) else None
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+    return None
+
+
+def collect_entries(sim_lab_dir):
+    """Scan a sim-lab directory and return sorted scenario entries.
+
+    Directories whose names are not valid scenario codes (and any plain files)
+    are skipped. A scenario missing meta.name is kept, named by its code, with
+    a stderr warning.
+    """
+    entries = []
+    for child in os.listdir(sim_lab_dir):
+        path = os.path.join(sim_lab_dir, child)
+        if not os.path.isdir(path) or parse_code(child) is None:
+            continue
+        name = read_scenario_name(os.path.join(path, "unified.json"))
+        if name is None:
+            sys.stderr.write(f"warning: no meta.name for {child}, using code\n")
+        entries.append(build_entry(child, name))
+    entries.sort(key=sort_key)
+    return entries
+
+
+def main(argv=None):
+    """Generate sim-lab/scenarios.js from the scenarios repo."""
+    repo_root = Path(__file__).resolve().parent.parent
+    parser = argparse.ArgumentParser(description="Generate sim-lab/scenarios.js.")
+    parser.add_argument(
+        "--scenarios-dir",
+        default=str(repo_root.parent / "scenarios"),
+        help="Path to the matc-ems/scenarios repo (default: ../scenarios).",
+    )
+    parser.add_argument(
+        "--output",
+        default=str(repo_root / "sim-lab" / "scenarios.js"),
+        help="Where to write the data file (default: sim-lab/scenarios.js).",
+    )
+    args = parser.parse_args(argv)
+
+    sim_lab_dir = os.path.join(args.scenarios_dir, "sim-lab")
+    if not os.path.isdir(sim_lab_dir):
+        sys.stderr.write(f"error: not a directory: {sim_lab_dir}\n")
+        sys.exit(1)
+
+    entries = collect_entries(sim_lab_dir)
+    out_path = Path(args.output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(render_js(entries), encoding="utf-8")
+    print(f"Wrote {len(entries)} scenarios to {out_path}")
+
+
+if __name__ == "__main__":
+    main()

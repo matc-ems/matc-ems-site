@@ -1,5 +1,7 @@
 """Unit tests for scripts/build_sim_lab_index.py."""
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -90,6 +92,101 @@ class TestRenderJs(unittest.TestCase):
         out = b.render_js([entry])
         self.assertIn('"code": "C-T1-01"', out)
         self.assertIn('"name": "Chest Pain"', out)
+
+
+def _make_scenario(sim_lab_dir, code, name):
+    """Create a scenario folder with a unified.json holding meta.name."""
+    folder = Path(sim_lab_dir) / code
+    folder.mkdir(parents=True)
+    (folder / "unified.json").write_text(
+        json.dumps({"meta": {"name": name}}), encoding="utf-8"
+    )
+    return folder
+
+
+class TestReadScenarioName(unittest.TestCase):
+    def test_reads_meta_name(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "unified.json"
+            p.write_text(json.dumps({"meta": {"name": "Chest Pain"}}), encoding="utf-8")
+            self.assertEqual(b.read_scenario_name(str(p)), "Chest Pain")
+
+    def test_missing_file_returns_none(self):
+        self.assertIsNone(b.read_scenario_name("/no/such/unified.json"))
+
+    def test_invalid_json_returns_none(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "unified.json"
+            p.write_text("{not json", encoding="utf-8")
+            self.assertIsNone(b.read_scenario_name(str(p)))
+
+    def test_absent_meta_name_returns_none(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "unified.json"
+            p.write_text(json.dumps({"meta": {}}), encoding="utf-8")
+            self.assertIsNone(b.read_scenario_name(str(p)))
+
+    def test_blank_meta_name_returns_none(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "unified.json"
+            p.write_text(json.dumps({"meta": {"name": "  "}}), encoding="utf-8")
+            self.assertIsNone(b.read_scenario_name(str(p)))
+
+    def test_non_dict_meta_returns_none(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "unified.json"
+            p.write_text(json.dumps({"meta": None}), encoding="utf-8")
+            self.assertIsNone(b.read_scenario_name(str(p)))
+
+    def test_non_dict_toplevel_returns_none(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "unified.json"
+            p.write_text(json.dumps([1, 2, 3]), encoding="utf-8")
+            self.assertIsNone(b.read_scenario_name(str(p)))
+
+
+class TestCollectEntries(unittest.TestCase):
+    def test_collects_and_sorts(self):
+        with tempfile.TemporaryDirectory() as d:
+            _make_scenario(d, "C-T2-01", "Cardiac Two")
+            _make_scenario(d, "B-T1-01", "Behavioral One")
+            _make_scenario(d, "C-T1-01", "Cardiac One")
+            entries = b.collect_entries(d)
+        self.assertEqual(
+            [e["code"] for e in entries], ["B-T1-01", "C-T1-01", "C-T2-01"]
+        )
+        self.assertEqual(entries[0]["name"], "Behavioral One")
+
+    def test_skips_non_code_dirs_and_files(self):
+        with tempfile.TemporaryDirectory() as d:
+            _make_scenario(d, "C-T1-01", "Cardiac One")
+            (Path(d) / "index.html").write_text("<html>", encoding="utf-8")
+            (Path(d) / "notes").mkdir()
+            entries = b.collect_entries(d)
+        self.assertEqual([e["code"] for e in entries], ["C-T1-01"])
+
+    def test_missing_unified_json_falls_back_to_code(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "C-T1-01").mkdir()  # no unified.json inside
+            entries = b.collect_entries(d)
+        self.assertEqual(entries[0]["name"], "C-T1-01")
+
+
+class TestMain(unittest.TestCase):
+    def test_writes_output_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            sim_lab = Path(d) / "sim-lab"
+            _make_scenario(sim_lab, "C-T1-01", "Cardiac One")
+            out = Path(d) / "scenarios.js"
+            b.main(["--scenarios-dir", d, "--output", str(out)])
+            text = out.read_text(encoding="utf-8")
+        self.assertIn("window.SIM_LAB_SCENARIOS = [", text)
+        self.assertIn('"code": "C-T1-01"', text)
+
+    def test_missing_sim_lab_dir_exits(self):
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(SystemExit):
+                b.main(["--scenarios-dir", d, "--output", str(Path(d) / "x.js")])
 
 
 if __name__ == "__main__":
