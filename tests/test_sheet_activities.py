@@ -74,5 +74,26 @@ class TestIsNewFormat(unittest.TestCase):
         self.assertFalse(sa.is_new_format([]))
 
 
+class TestRoundRobin(unittest.TestCase):
+    def test_six_items_three_instructors(self):
+        # per = 2: I0 gets items 0,3 · I1 gets 1,4 · I2 gets 2,5.
+        self.assertEqual(sa.round_robin([0, 1, 2, 3, 4, 5], 3),
+                         [[0, 3], [1, 4], [2, 5]])
+
+    def test_six_items_four_instructors_drops_remainder(self):
+        # per = 1: each gets one item; items 4 and 5 are dropped.
+        self.assertEqual(sa.round_robin([0, 1, 2, 3, 4, 5], 4),
+                         [[0], [1], [2], [3]])
+
+    def test_fewer_items_than_instructors_drops_all(self):
+        self.assertEqual(sa.round_robin([0, 1], 3), [[], [], []])
+
+    def test_zero_instructors_returns_empty(self):
+        self.assertEqual(sa.round_robin([0, 1, 2], 0), [])
+
+    def test_empty_pool(self):
+        self.assertEqual(sa.round_robin([], 3), [[], [], []])
+
+
 if __name__ == "__main__":
     unittest.main()

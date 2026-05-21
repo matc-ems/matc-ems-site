@@ -83,3 +83,22 @@ def is_new_format(header_row):
     """
     cleaned = [c.strip().lower() for c in header_row[: len(EXPECTED_HEADER)]]
     return cleaned == EXPECTED_HEADER
+
+
+def round_robin(pool, n_instructors):
+    """Distribute `pool` across `n_instructors`, round-robin, evenly.
+
+    Returns a list of `n_instructors` lists. Each instructor gets exactly
+    `per = len(pool) // n_instructors` items: item k goes to instructor
+    k % n_instructors, so instructor i receives items i, i+n, i+2n, ….
+    The trailing `len(pool) - per*n_instructors` items are dropped so every
+    instructor's list has the same length. Returns [] when n_instructors <= 0.
+    """
+    if n_instructors <= 0:
+        return []
+    per = len(pool) // n_instructors
+    used = pool[: per * n_instructors]
+    buckets = [[] for _ in range(n_instructors)]
+    for k, item in enumerate(used):
+        buckets[k % n_instructors].append(item)
+    return buckets
