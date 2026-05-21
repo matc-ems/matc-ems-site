@@ -312,16 +312,17 @@ class TestUpsertToSupabase(unittest.TestCase):
 
 class TestAttachActivities(unittest.TestCase):
     HEADER = [
-        "date", "day_of_week", "shift", "start_time", "end_time", "duration_min",
-        "activity_type", "activity_id", "activity_title", "activity_description",
-        "scenario_slugs", "scenario_links", "pp_skill_links", "activity_links",
+        "date", "start_time", "end_time", "activity_type", "activity_id",
+        "activity_title", "activity_description", "scenario_slugs",
+        "scenario_links", "pp_skill_links", "activity_links",
     ]
 
     def _row(self, sheet_date, start, slugs=""):
-        r = [""] * 14
+        # 11-column row: date(0), start_time(1), scenario_slugs(7).
+        r = [""] * 11
         r[0] = sheet_date
-        r[3] = start
-        r[10] = slugs
+        r[1] = start
+        r[7] = slugs
         return r
 
     def _shift_row(self, cohort, shift_date, am_pm):

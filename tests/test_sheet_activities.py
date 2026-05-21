@@ -92,7 +92,7 @@ class TestGwsGetValues(unittest.TestCase):
             sa.gws_get_values(3)
         cmd = mock_run.call_args[0][0]
         params = json.loads(cmd[cmd.index("--params") + 1])
-        self.assertEqual(params["range"], "'Cohort 3'!A1:N1000")
+        self.assertEqual(params["range"], "'Cohort 3'!A1:K1000")
 
     def test_nonzero_exit_raises_runtimeerror(self):
         fake = MagicMock(returncode=1, stdout="", stderr="auth expired")
@@ -108,8 +108,8 @@ class TestBuildActivities(unittest.TestCase):
     @staticmethod
     def row(date="01-21-26", start="8:00", title="", slugs="", scen_links="",
             pp_links="", act_links=""):
-        # 14-column row (A–N); only the columns build_activities reads matter.
-        r = [""] * 14
+        # 11-column row (A–K); only the columns build_activities reads matter.
+        r = [""] * 11
         r[sa.COL_DATE] = date
         r[sa.COL_START] = start
         r[sa.COL_TITLE] = title

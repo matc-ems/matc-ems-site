@@ -21,20 +21,20 @@ from datetime import date, datetime, time
 SPREADSHEET_ID = "1aSnWNVMK6ib84AVnvmf9TTlkJCe0i7WxgdKxlD_bmh8"
 SLUG_BASE_URL = "https://matc-ems.github.io/scenarios/main-lab/"
 
-# New 14-column tab layout (columns A–N). Indices of the columns we read.
+# 11-column tab layout (columns A–K). Indices of the columns we read.
 COL_DATE = 0
-COL_START = 3
-COL_TITLE = 8
-COL_SCENARIO_SLUGS = 10
-COL_SCENARIO_LINKS = 11
-COL_PP_SKILL_LINKS = 12
-COL_ACTIVITY_LINKS = 13
+COL_START = 1
+COL_TITLE = 5
+COL_SCENARIO_SLUGS = 7
+COL_SCENARIO_LINKS = 8
+COL_PP_SKILL_LINKS = 9
+COL_ACTIVITY_LINKS = 10
 
-# Header row of the new layout — used to reject the old `Cohort 1` format.
+# Header row of the layout — used to reject any tab not in this format.
 EXPECTED_HEADER = [
-    "date", "day_of_week", "shift", "start_time", "end_time", "duration_min",
-    "activity_type", "activity_id", "activity_title", "activity_description",
-    "scenario_slugs", "scenario_links", "pp_skill_links", "activity_links",
+    "date", "start_time", "end_time", "activity_type", "activity_id",
+    "activity_title", "activity_description", "scenario_slugs",
+    "scenario_links", "pp_skill_links", "activity_links",
 ]
 
 
@@ -82,10 +82,10 @@ def split_cell(value):
 
 
 def is_new_format(header_row):
-    """True when a tab's header row matches the 14-column activity layout.
+    """True when a tab's header row matches the 11-column activity layout.
 
-    The old `Cohort 1` tab (`Class Date, Start Time, …`) returns False so the
-    caller can skip it gracefully.
+    A tab in any other layout returns False so the caller can skip it
+    gracefully.
     """
     cleaned = [c.strip().lower() for c in header_row[: len(EXPECTED_HEADER)]]
     return cleaned == EXPECTED_HEADER
@@ -224,7 +224,7 @@ def gws_get_values(cohort_number):
         "gws", "sheets", "spreadsheets", "values", "get",
         "--params", json.dumps({
             "spreadsheetId": SPREADSHEET_ID,
-            "range": f"'{tab}'!A1:N1000",
+            "range": f"'{tab}'!A1:K1000",
         }),
         "--format", "json",
     ]
