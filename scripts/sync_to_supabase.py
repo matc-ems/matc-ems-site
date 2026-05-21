@@ -129,6 +129,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="Path to a pre-fetched workflow JSON. Skips the Humanity call.")
     p.add_argument("--dry-run", action="store_true",
                    help="Print rows that would be upserted; make no Supabase call.")
+    p.add_argument("--skip-activities", action="store_true",
+                   help="Skip the activity-sheet pull (shifts only; no gws needed).")
     args = p.parse_args(argv)
     if bool(args.from_date) ^ bool(args.to_date):
         p.error("--from and --to must be provided together")

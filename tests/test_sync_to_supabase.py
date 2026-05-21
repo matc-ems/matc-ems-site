@@ -185,6 +185,12 @@ class TestParseArgs(unittest.TestCase):
         args = s.parse_args(["--dry-run"])
         self.assertTrue(args.dry_run)
 
+    def test_skip_activities_defaults_false(self):
+        self.assertFalse(s.parse_args([]).skip_activities)
+
+    def test_skip_activities_flag(self):
+        self.assertTrue(s.parse_args(["--skip-activities"]).skip_activities)
+
     def test_from_without_to_errors(self):
         with self.assertRaises(SystemExit):
             s.parse_args(["--from", "2026-05-18"])
