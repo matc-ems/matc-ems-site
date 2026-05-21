@@ -286,7 +286,7 @@ def main(argv: list[str] | None = None) -> None:
     if not args.skip_activities:
         try:
             attach_activities(rows)
-        except RuntimeError as exc:
+        except (RuntimeError, OSError) as exc:
             sys.stderr.write(
                 f"{exc}\n\n"
                 "The activity-sheet pull needs the `gws` CLI authenticated.\n"

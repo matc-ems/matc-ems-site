@@ -167,6 +167,7 @@ class TestParseArgs(unittest.TestCase):
         self.assertEqual(args.cohorts, "1,2,3,4")
         self.assertIsNone(args.input)
         self.assertFalse(args.dry_run)
+        self.assertFalse(args.skip_activities)
 
     def test_date_range(self):
         args = s.parse_args(["--from", "2026-05-18", "--to", "2026-05-22"])
