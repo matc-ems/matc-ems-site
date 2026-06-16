@@ -30,7 +30,7 @@
   }
   .brand-name { font-size: 14px; font-weight: 500; }
 
-  .hero { padding: 12px 0 22px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+  .hero { padding: 12px 0 14px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
   .hero h1 {
     font-family: var(--font-serif); font-weight: 400;
     font-size: 52px; line-height: 1.0; margin: 0;
@@ -65,6 +65,9 @@
   }
   .clear-btn::before { content: "·"; margin: 0 6px; color: var(--ink-soft); }
   .clear-btn:hover { text-decoration: underline; }
+
+  .hero-forms { margin-top: 18px; margin-bottom: 0; }
+  .form-link { display: inline-block; text-decoration: none; }
 
   .category { margin-bottom: 30px; }
   .category-label {
@@ -107,6 +110,15 @@
     <div class="hero">
       <h1>Sim Lab Hub</h1>
       <p>Interactive simulation scenarios for the MATC paramedic program.</p>
+      <div class="filter-row hero-forms">
+        <div class="filter-label">Form</div>
+        <div class="chips">
+          <a class="chip form-link" href="https://docs.google.com/forms/d/e/1FAIpQLSdobtt6b1v2QQShIs9ddjc_eV-aW8HBTgSAfNMSDO7s99AlnA/viewform?usp=header" target="_blank" rel="noopener">Cohort 1</a>
+          <a class="chip form-link" href="https://docs.google.com/forms/d/e/1FAIpQLSe1N66MtLsQTdnwyrSol1aa-RduHDzrQJM-gJeXp-bsWiXf9Q/viewform?usp=header" target="_blank" rel="noopener">Cohort 2</a>
+          <a class="chip form-link" href="https://docs.google.com/forms/d/e/1FAIpQLScBnMaCRsEmpYolDuF0jmJjFUtj3loPrNEI_IFpGOAiB7RTJA/viewform?usp=header" target="_blank" rel="noopener">Cohort 3</a>
+          <a class="chip form-link" href="https://docs.google.com/forms/d/e/1FAIpQLSdxdt3isqcYXL9-k93ZcgJd810YkZgy74fQNaADyg_rHgSGPg/viewform?usp=header" target="_blank" rel="noopener">Cohort 4</a>
+        </div>
+      </div>
     </div>
 
     <div class="filterbar">
