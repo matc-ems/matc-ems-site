@@ -30,6 +30,72 @@
   }
   .brand-name { font-size: 14px; font-weight: 500; }
 
+  .help-btn {
+    margin-left: auto;
+    font-family: var(--font-mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: 7px 14px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--bg-card);
+    color: var(--ink-mid); cursor: pointer;
+  }
+  .help-btn:hover { border-color: var(--accent); color: var(--accent-deep); }
+
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0, 0, 0, 0.4);
+    display: none; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg-card); color: var(--ink);
+    width: 100%; max-width: 560px; max-height: 80vh; overflow-y: auto;
+    border: 1px solid var(--line); border-radius: 14px;
+    padding: 26px 30px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  }
+  .modal-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 16px; margin-bottom: 14px;
+  }
+  .modal-title {
+    font-family: var(--font-serif); font-weight: 400;
+    font-size: 28px; line-height: 1; margin: 0;
+  }
+  .modal-close {
+    font-family: var(--font-sans); font-size: 22px; line-height: 1;
+    background: none; border: none; padding: 2px 4px; cursor: pointer;
+    color: var(--ink-soft);
+  }
+  .modal-close:hover { color: var(--ink); }
+  .modal-body { font-size: 14px; line-height: 1.55; color: var(--ink-mid); }
+  .modal-body h3 {
+    font-family: var(--font-mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--ink-soft); margin: 22px 0 8px;
+  }
+  .modal-body h3:first-child { margin-top: 0; }
+  .modal-body p { margin: 0 0 10px; }
+  .modal-body ul, .modal-body ol { margin: 0 0 10px; padding-left: 20px; }
+  .modal-body li { margin-bottom: 6px; }
+  .modal-body strong { color: var(--ink); font-weight: 700; }
+  .modal-body .note {
+    background: var(--bg-sunk); border-radius: 8px;
+    padding: 12px 14px; margin: 0 0 10px;
+  }
+  .modal-body .quickref {
+    list-style: none; padding: 14px 16px; margin: 0 0 6px;
+    background: var(--bg-sunk); border-radius: 10px;
+  }
+  .modal-body .quickref li {
+    position: relative; padding-left: 20px; margin-bottom: 8px;
+  }
+  .modal-body .quickref li:last-child { margin-bottom: 0; }
+  .modal-body .quickref li::before {
+    content: "→"; position: absolute; left: 0;
+    color: var(--accent); font-weight: 700;
+  }
+
   .hero { padding: 12px 0 14px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
   .hero h1 {
     font-family: var(--font-serif); font-weight: 400;
@@ -105,6 +171,7 @@
         <div class="brand-kicker">MATC EMS Department</div>
         <div class="brand-name">Sim Lab Hub</div>
       </div>
+      <button type="button" class="help-btn" id="help-btn" aria-haspopup="dialog">How to run scenarios</button>
     </div>
 
     <div class="hero">
@@ -137,6 +204,108 @@
 
     <div id="scenario-list"></div>
   </div>
+
+  <div class="modal-overlay" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+    <div class="modal">
+      <div class="modal-head">
+        <h2 class="modal-title" id="help-modal-title">How to run scenarios</h2>
+        <button type="button" class="modal-close" id="help-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <ul class="quickref">
+          <li>Check each student's history on the <strong>Sim Lab Tracker</strong> tab before the day.</li>
+          <li>Progression per student: <strong>2&times; Tier 1 &rarr; 2&times; Tier 2 &rarr; alternate Tier 3 / Tier 2</strong>.</li>
+          <li>Aim for <strong>~50% Tier 2</strong>, the rest split across Tier 1 and Tier 3.</li>
+          <li>Submit a <strong>form for every scenario</strong> &mdash; it auto-updates the tracker.</li>
+        </ul>
+
+        <h3>Before the day</h3>
+        <p>
+          Prep from the cohort's <strong>clinical schedule sheet</strong> — open the
+          <strong>Sim Lab Tracker</strong> tab (the last tab). For each student it shows:
+        </p>
+        <ul>
+          <li>How many scenarios they've <strong>led</strong></li>
+          <li>The <strong>categories</strong> they've led</li>
+          <li>The <strong>tiers</strong> (difficulty) they've led</li>
+          <li>The scenario <strong>codes they've led</strong></li>
+          <li>The scenario codes they've <strong>seen overall</strong> — led <em>and</em> been a team member on</li>
+        </ul>
+
+        <h3>The three tiers</h3>
+        <ul>
+          <li>
+            <strong>Tier 1 — Foundations.</strong> Simpler scenarios. The focus is a
+            solid assessment with good flow.
+          </li>
+          <li>
+            <strong>Tier 2 — Critical thinking.</strong> More complex, with a few
+            possible pathways. Still built on a good assessment, but adds choosing the
+            right interventions and thinking critically.
+          </li>
+          <li>
+            <strong>Tier 3 — High acuity, low frequency.</strong> Cardiac arrest, cric,
+            major trauma, and the like. Students need a strong XABC's to catch life
+            threats, the right skills at the right time, and good team leadership —
+            staying organized and delegating when appropriate.
+          </li>
+        </ul>
+
+        <h3>How each student should progress</h3>
+        <p>Each <strong>individual student</strong> (not the group) should move through the tiers in this order:</p>
+        <ol>
+          <li>Two <strong>Tier 1</strong> scenarios</li>
+          <li>Two <strong>Tier 2</strong> scenarios</li>
+          <li>Then alternate the rest: one <strong>Tier 3</strong>, one <strong>Tier 2</strong>, and so on</li>
+        </ol>
+        <p class="note">
+          <strong>Target mix by the end:</strong> about <strong>50%</strong> of the
+          scenarios a student led should be <strong>Tier 2</strong>, with the other half
+          split between Tier 1 and Tier 3 — not mostly in either one. Use the tracker
+          sheet to pick scenarios that hold this ratio.
+        </p>
+
+        <h3>Categories</h3>
+        <p>
+          Each student's categories are tracked too. Duplicates are fine, but the spread
+          helps you see what kinds of calls a student has had — try to diversify them.
+        </p>
+
+        <h3>Fill out a form for every scenario</h3>
+        <p>
+          Submit a form (the <strong>Cohort</strong> links at the top of this page) for
+          <strong>each scenario</strong> run. It records who <strong>led</strong> and who
+          was on the <strong>team</strong>, and submitting it automatically updates that
+          cohort's <strong>Sim Lab Tracker</strong> — no manual entry needed.
+        </p>
+        <p>
+          Each form also has a few <strong>performance rubric</strong> sections to note how
+          the student did. These are <strong>optional</strong>, but filling them in helps
+          other instructors see where a student's strengths and weaknesses lie.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var btn = document.getElementById("help-btn");
+      var modal = document.getElementById("help-modal");
+      var closeBtn = document.getElementById("help-close");
+
+      function openModal() { modal.classList.add("open"); }
+      function closeModal() { modal.classList.remove("open"); }
+
+      btn.addEventListener("click", openModal);
+      closeBtn.addEventListener("click", closeModal);
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) closeModal();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closeModal();
+      });
+    })();
+  </script>
 
   <script src="/sim-lab/scenarios.js"></script>
   <script>
